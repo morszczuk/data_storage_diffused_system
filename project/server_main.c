@@ -12,6 +12,8 @@
 #include <signal.h>
 #include <netdb.h>
 #include <fcntl.h>
+#include <pthread.h>
+
 #define ERR(source) (perror(source),\
 		     fprintf(stderr,"%s:%d\n",__FILE__,__LINE__),\
 		     exit(EXIT_FAILURE))
@@ -19,10 +21,31 @@
 #define BACKLOG 3
 
 volatile sig_atomic_t do_work=1 ;
+void* connect_to_slave(void* args);
+void* upload_listener(void* args);
+int get_number_of_slaves(char* filename);
+pthread_t upload_listener_tid;
+int slaves_connected = 0;
+struct slave* slave_addresses;
+int slaves_count;
+
+pthread_mutex_t lock;
 
 void sigint_handler(int sig) {
 	do_work=0;
 }
+
+struct server_slave_info {
+	int port;
+	char* address;
+	int socket;
+};
+
+struct slave {
+	char* port;
+	char* addr;
+	int sock;
+};
 
 int sethandler( void (*f)(int), int sigNo) {
 	struct sigaction act;
@@ -61,10 +84,19 @@ int bind_inet_socket(uint16_t port,int type){
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(port);
 	addr.sin_addr.s_addr = htonl(INADDR_ANY);
-	if (setsockopt(socketfd, SOL_SOCKET, SO_REUSEADDR,&t, sizeof(t))) ERR("setsockopt");
-	if(bind(socketfd,(struct sockaddr*) &addr,sizeof(addr)) < 0)  ERR("bind");
+	memset(&(addr.sin_zero), '\0', 8);
+
+	//Allows to reuse port
+	if (setsockopt(socketfd, SOL_SOCKET, SO_REUSEADDR,&t, sizeof(t)))
+		ERR("setsockopt");
+
+	//Binds port and all of the addresses
+	if(bind(socketfd,(struct sockaddr*) &addr,sizeof(addr)) < 0)
+		ERR("bind");
+
 	if(SOCK_STREAM==type)
 		if(listen(socketfd, BACKLOG) < 0) ERR("listen");
+
 	return socketfd;
 }
 
@@ -78,7 +110,7 @@ int add_new_client(int sfd){
 }
 
 void usage(char * name){
-	fprintf(stderr,"USAGE: %s socket port\n",name);
+	fprintf(stderr,"USAGE: %s port\n",name);
 }
 
 ssize_t bulk_read(int fd, char *buf, size_t count){
@@ -184,8 +216,146 @@ void doServer(int fdL, int fdT, int fdU){
 	sigprocmask (SIG_UNBLOCK, &mask, NULL);
 }
 
+struct sockaddr_in make_address(char *address, uint16_t port){
+	struct sockaddr_in addr;
+	struct hostent *hostinfo;
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons (port);
+	hostinfo = gethostbyname(address);
+	if(hostinfo == NULL) ERR("gethostbyname");
+	addr.sin_addr = *(struct in_addr*) hostinfo->h_addr;
+	return addr;
+}
+
+void establish_connection_with_slaves(char* file, int sock) {
+	FILE* fp;
+	char* line;
+	char* address;
+	char* port;
+	size_t len = 0;
+	ssize_t read;
+	int k, i = 0;
+	pthread_t* tids;
+
+	slave_addresses = (struct slave*)calloc(slaves_count, sizeof(struct slave));
+	tids = (pthread_t*)calloc(slaves_count, sizeof(pthread_t));
+
+	fp = fopen(file, "r");
+	if (fp == NULL)
+        ERR("fopen");
+
+	while ((read = getline(&line, &len, fp)) != -1) {
+	  	address = strtok (line," ");
+		port = strtok (NULL, " ");
+		printf("Connecting to: %s %s", address, port);
+		slave_addresses[i].port = port;
+		slave_addresses[i].addr = address;
+		if((pthread_create(&(tids[i]), NULL, connect_to_slave, (void*)&slave_addresses[i])) < 0)
+			ERR("pthread_create:");
+		pthread_join(tids[i], (void**)&((slave_addresses[i]).sock));
+		i++;
+    }
+
+	pthread_mutex_lock(&lock);
+	slaves_connected = 1;
+	pthread_mutex_unlock(&lock);
+
+	for(k = 0; k < i; k++) {
+		printf("Zwrócono socket: [%d]\n", (slave_addresses[k]).sock);
+	}
+
+
+	/*
+	for(k = 0; k < i; k++) {
+		printf("CHEKPOINT 4/%d\n", k);
+		pthread_join(tids[k], NULL);
+	}	*/
+
+	free(tids);
+	fclose(fp);
+}
+
+void* connect_to_slave(void* arg) {
+	int sock;
+	struct slave* slave_addr;
+	struct sockaddr_in addr;
+
+	slave_addr = (struct slave*) arg;
+	addr = make_address((*slave_addr).addr, atoi((*slave_addr).port));
+	sock = make_socket(PF_INET, SOCK_STREAM);
+	while(TEMP_FAILURE_RETRY(connect(sock,(struct sockaddr*) &addr,sizeof(struct sockaddr_in))) < 0) {
+		sleep(1);
+		printf("Połączenie nie zostało nawiązane, ponawiam\n");
+	}
+		//if(errno!=EINTR) ERR("connect");
+
+	printf("CONNECTED PORT: %s", (*slave_addr).port);
+
+	return (void*)sock;
+}
+
+int get_number_of_slaves(char* filename) {
+	int lines = 0;
+	FILE* fp;
+	int ch;
+
+	fp = fopen(filename, "r");
+	if (fp == NULL)
+		ERR("fopen");
+	while(!feof(fp))
+	{
+	  ch = fgetc(fp);
+	  if(ch == '\n')
+	  {
+	    lines++;
+	  }
+	}
+	fclose(fp);
+	return lines;
+}
+
+void listen_for_uploader(int socketfd) {
+
+	if((pthread_create(&(upload_listener_tid), NULL, upload_listener, (void*)socketfd)) < 0)
+		ERR("pthread_create:");
+}
+
+void* upload_listener(void* args) {
+	int are_slaves_connected;
+	char* mess;
+	char* buff;
+	int new_fd;
+	int fd;
+
+	fd = (int)args;
+
+
+	mess = "AINT READY BITCH!";
+	pthread_mutex_lock(&lock);
+	are_slaves_connected = slaves_connected;
+	pthread_mutex_unlock(&lock);
+
+	while(!are_slaves_connected) {
+		new_fd = add_new_client(fd);
+		printf("System czeka na nawiązanie połączenia ze wszystkimi serwerami slave. Proszę czekać\n");
+		pthread_mutex_lock(&lock);
+		are_slaves_connected = slaves_connected;
+		pthread_mutex_unlock(&lock);
+		bulk_read(new_fd, buff, 100);
+		printf("%s\n", buff);
+		bulk_read(new_fd, mess, sizeof(mess));
+		sleep(1);
+	}
+
+	printf("Czekam na podłączenie się uploader'a\n");
+
+
+
+	return NULL;
+}
+
 int main(int argc, char** argv) {
-	int fdT;
+	int socketfd;
 	int new_flags;
 	if(argc!=3) {
 		usage(argv[0]);
@@ -193,16 +363,25 @@ int main(int argc, char** argv) {
 	}
 	if(sethandler(SIG_IGN,SIGPIPE)) ERR("Seting SIGPIPE:");
 	if(sethandler(sigint_handler,SIGINT)) ERR("Seting SIGINT:");
+	if (pthread_mutex_init(&lock, NULL) != 0) ERR("Mutex init:");
 
-	fdT=bind_inet_socket(atoi(argv[2]),SOCK_STREAM);
-	new_flags = fcntl(fdT, F_GETFL) | O_NONBLOCK;
-	fcntl(fdT, F_SETFL, new_flags);
-	
-	doServer(fdL,fdT,fdU);
-	if(TEMP_FAILURE_RETRY(close(fdL))<0)ERR("close");
-        if(unlink(argv[1])<0)ERR("unlink");
-	if(TEMP_FAILURE_RETRY(close(fdT))<0)ERR("close");
-	if(TEMP_FAILURE_RETRY(close(fdU))<0)ERR("close");
+	slaves_count = get_number_of_slaves(argv[2]);
+
+	socketfd = bind_inet_socket(atoi(argv[1]),SOCK_STREAM);
+	new_flags = fcntl(socketfd, F_GETFL) | O_NONBLOCK;
+	fcntl(socketfd, F_SETFL, new_flags);
+
+	listen_for_uploader(socketfd);
+
+	establish_connection_with_slaves(argv[2], socketfd);
+	printf("SYSTEM GOTOWY DO UŻYCIA\n");
+
+	pthread_join(upload_listener_tid, NULL);
+
+	//doServer(0,fdT, 0);
+	if(TEMP_FAILURE_RETRY(close(socketfd))<0)ERR("close");
+
+	free(slave_addresses);
 	fprintf(stderr,"Server has terminated.\n");
 	return EXIT_SUCCESS;
 }
