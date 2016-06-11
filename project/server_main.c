@@ -19,10 +19,13 @@
 		     exit(EXIT_FAILURE))
 
 #define BACKLOG 3
+#define BUFF_SIZE 3000
+#define PART_SIZE 5
 
 volatile sig_atomic_t do_work=1 ;
 void* connect_to_slave(void* args);
 void* upload_listener(void* args);
+void* send_part_of_file_to_slaves(void* args);
 int get_number_of_slaves(char* filename);
 pthread_t upload_listener_tid;
 int slaves_connected = 0;
@@ -259,7 +262,6 @@ void establish_connection_with_slaves(char* file, int sock) {
 	pthread_mutex_lock(&lock);
 	slaves_connected = 1;
 	pthread_mutex_unlock(&lock);
-
 	for(k = 0; k < i; k++) {
 		printf("Zwrócono socket: [%d]\n", (slave_addresses[k]).sock);
 	}
@@ -271,7 +273,7 @@ void establish_connection_with_slaves(char* file, int sock) {
 		pthread_join(tids[k], NULL);
 	}	*/
 
-	free(tids);
+	//free(tids);
 	fclose(fp);
 }
 
@@ -285,7 +287,7 @@ void* connect_to_slave(void* arg) {
 	sock = make_socket(PF_INET, SOCK_STREAM);
 	while(TEMP_FAILURE_RETRY(connect(sock,(struct sockaddr*) &addr,sizeof(struct sockaddr_in))) < 0) {
 		sleep(1);
-		printf("Połączenie nie zostało nawiązane, ponawiam\n");
+		//printf("Połączenie nie zostało nawiązane, ponawiam\n");
 	}
 		//if(errno!=EINTR) ERR("connect");
 
@@ -316,42 +318,90 @@ int get_number_of_slaves(char* filename) {
 
 void listen_for_uploader(int socketfd) {
 
-	if((pthread_create(&(upload_listener_tid), NULL, upload_listener, (void*)socketfd)) < 0)
-		ERR("pthread_create:");
+
+	printf("CHECK 6\n");
 }
 
 void* upload_listener(void* args) {
 	int are_slaves_connected;
-	char* mess;
-	char* buff;
+	char* mess_waiting;
+	char* mess_ready;
+	char buff[BUFF_SIZE];
 	int new_fd;
-	int fd;
+	int fd, c;
+	int number_of_parts;
+	pthread_t* tids;
 
 	fd = (int)args;
 
 
-	mess = "AINT READY BITCH!";
+	new_fd = add_new_client(fd);
+	mess_waiting = "0";
+	mess_ready = "1";
+	printf("Mam połączenie z uploaderem\n");
 	pthread_mutex_lock(&lock);
 	are_slaves_connected = slaves_connected;
 	pthread_mutex_unlock(&lock);
 
-	while(!are_slaves_connected) {
-		new_fd = add_new_client(fd);
-		printf("System czeka na nawiązanie połączenia ze wszystkimi serwerami slave. Proszę czekać\n");
+
+	while(!are_slaves_connected && do_work) {
+
 		pthread_mutex_lock(&lock);
 		are_slaves_connected = slaves_connected;
 		pthread_mutex_unlock(&lock);
-		bulk_read(new_fd, buff, 100);
-		printf("%s\n", buff);
-		bulk_read(new_fd, mess, sizeof(mess));
-		sleep(1);
+		//printf("System czeka na nawiązanie połączenia ze wszystkimi serwerami slave. Proszę czekać\n");
+		//if ((recv(new_fd, buff, 100, 0)) == -1) ERR("recv:");
+		printf("strlen(mess): %d\n", strlen(mess_waiting));
+		//if((c=TEMP_FAILURE_RETRY(write(new_fd,&mess,strlen(mess))))< 0) ERR("write:");
+		if(bulk_write(new_fd, mess_waiting, strlen(mess_waiting)) < 0) ERR("bulk_write");
+		//if(bulk_read(new_fd, buff, 7) > 0)
+			//printf("%s\n", buff);
+			//close(new_fd);
+
+
+		//buff = 0;
+		//bulk_write(new_fd, mess, sizeof(mess));
+		//printf("CHECK 1\n");
+		sleep(2);
+		//printf("CHECK 2\n");
 	}
 
-	printf("Czekam na podłączenie się uploader'a\n");
+	//if(bulk_read(new_fd, buff, 7) > 0)
+		//printf("%s\n", buff);
+	if(bulk_write(new_fd, mess_ready, strlen(mess_ready))< 0) ERR("write:");
 
+	sleep(3);
+	memset(buff,0,sizeof(buff));
 
+	c=TEMP_FAILURE_RETRY(read(new_fd,&buff,BUFF_SIZE));
+	if(c < 0)
+		ERR("read");
+	else {
+		printf("Liczba części: %s\n", &buff);
+		number_of_parts = atoi(&buff);
+	}
 
-	return NULL;
+	sleep(2);
+	tids = (pthread_t*)calloc(number_of_parts, sizeof(pthread_t));
+
+	while(number_of_parts > 0) {
+		if((pthread_create(&(tids[i-1]), NULL, send_part_of_file_to_slaves, (void*)&slave_addresses[i])) < 0)
+			ERR("pthread_create:");
+		memset(buff,0,sizeof(buff));
+		//printf("Waiting for contact from uploader\n");
+		//bulk_write(new_fd, mess, strlen(mess));
+		c=TEMP_FAILURE_RETRY(read(new_fd,&buff,PART_SIZE));
+		if(c < 0)
+			ERR("read");
+		else {
+			printf("%s\n", &buff);
+		}
+		number_of_parts--;
+	}
+
+	if(bulk_write(new_fd, mess_ready, strlen(mess_ready))< 0) ERR("write:");
+
+	return 0;
 }
 
 int main(int argc, char** argv) {
@@ -368,12 +418,14 @@ int main(int argc, char** argv) {
 	slaves_count = get_number_of_slaves(argv[2]);
 
 	socketfd = bind_inet_socket(atoi(argv[1]),SOCK_STREAM);
-	new_flags = fcntl(socketfd, F_GETFL) | O_NONBLOCK;
+	//new_flags = fcntl(socketfd, F_GETFL) | O_NONBLOCK;
 	fcntl(socketfd, F_SETFL, new_flags);
 
-	listen_for_uploader(socketfd);
-
+	if((pthread_create(&(upload_listener_tid), NULL, upload_listener, (void*)socketfd)) < 0)
+		ERR("pthread_create:");
+	printf("CHECK 6\n");
 	establish_connection_with_slaves(argv[2], socketfd);
+printf("CHECK 7\n");
 	printf("SYSTEM GOTOWY DO UŻYCIA\n");
 
 	pthread_join(upload_listener_tid, NULL);

@@ -224,6 +224,8 @@ int main(int argc, char** argv) {
         printf("SERVER SLAVE: GOT CONNECTION\n");
         if(TEMP_FAILURE_RETRY(close(new_fd))<0)ERR("close");
     }
+
+
 	//doServer(0,fdT, 0);
 	if(TEMP_FAILURE_RETRY(close(fdT))<0)ERR("close");
 
