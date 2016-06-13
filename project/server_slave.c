@@ -12,17 +12,35 @@
 #include <signal.h>
 #include <netdb.h>
 #include <fcntl.h>
+#include <assert.h>
 #define ERR(source) (perror(source),\
 		     fprintf(stderr,"%s:%d\n",__FILE__,__LINE__),\
 		     exit(EXIT_FAILURE))
 
 #define BACKLOG 3
+#define BUFF_SIZE 5
+#define PART_SIZE 5
 
 volatile sig_atomic_t do_work=1 ;
+struct file_part* get_data_from_message(char* mess);
+int mkpath(char* file_path, mode_t mode);
 
 void sigint_handler(int sig) {
 	do_work=0;
 }
+
+struct slave_arg {
+	char* part;
+	int i;
+};
+
+struct file_part {
+	char* data;
+	int file_id;
+	int part_id;
+};
+
+int slave_id;
 
 int sethandler( void (*f)(int), int sigNo) {
 	struct sigaction act;
@@ -197,11 +215,81 @@ void doServer(int fdL, int fdT, int fdU){
 	sigprocmask (SIG_UNBLOCK, &mask, NULL);
 }
 
+void proceed_part(char* mess) {
+	struct file_part* f_part;
+	printf("Without &: %s\n", mess );
+
+	f_part = get_data_from_message(mess);
+
+	save_part_file(f_part);
+}
+
+void save_part_file(struct file_part* f_part) {
+	FILE* fp;
+	char filename[22];
+
+	sprintf(filename, "tmp/%d/%d.%d", slave_id, f_part -> file_id,  f_part -> part_id);
+	printf("Stworzona nazwa: %s, do wgrania: %s\n", filename, f_part->data);
+
+	if(mkpath(filename, 0755) < 0)
+		ERR("mkpath");
+
+	fp = fopen(filename, "ab+");
+
+	fputs(f_part->data, fp);
+	fclose(fp);
+}
+
+
+struct file_part* get_data_from_message(char* arg) {
+	struct file_part* fp;
+	char* f_id;
+	char* p_id;
+	char* data;
+	char* message;
+
+	message = malloc(strlen(arg));
+	fp = malloc(sizeof(struct file_part));
+
+	strcpy(message, arg);
+
+	f_id = strtok (message, ".");
+	p_id = strtok(NULL, ".");
+	data = strtok(NULL, ".");
+
+	fp -> file_id = atoi(f_id);
+	fp -> part_id = atoi(p_id);
+	fp -> data = malloc(PART_SIZE);
+	strncpy(fp -> data, data, PART_SIZE);
+
+	return fp;
+}
+
+int mkpath(char* file_path, mode_t mode) {
+  assert(file_path && *file_path);
+  char* p;
+  for (p=strchr(file_path+1, '/'); p; p=strchr(p+1, '/')) {
+    *p='\0';
+    if (mkdir(file_path, mode)==-1) {
+      if (errno!=EEXIST) { *p='/'; return -1; }
+    }
+    *p='/';
+  }
+  return 0;
+}
+
 int main(int argc, char** argv) {
     int fdT, new_fd;
     struct sockaddr_in addr;
 	int new_flags;
     socklen_t size;
+	char buff[BUFF_SIZE];
+	int c;
+	struct slave_arg* arggg;
+
+
+	arggg = malloc(sizeof(struct slave_arg));
+
 
     if(argc!=2) {
 		usage(argv[0]);
@@ -217,12 +305,33 @@ int main(int argc, char** argv) {
 	fcntl(fdT, F_SETFL, new_flags);
     while(1)
     {
+		memset(buff,0,sizeof(buff));
 		printf("CZEKAM NA POŁĄCZENIE\n");
         size = sizeof(struct sockaddr_in);
         if ((new_fd = accept(fdT, (struct sockaddr*)&addr, &size)) == -1)
             ERR("accept");
         printf("SERVER SLAVE: GOT CONNECTION\n");
-        if(TEMP_FAILURE_RETRY(close(new_fd))<0)ERR("close");
+		c=TEMP_FAILURE_RETRY(read(new_fd,&buff,BUFF_SIZE+22));
+		if(c < 0)
+			ERR("read");
+		if(c > 0) {
+			slave_id = atoi(&buff);
+			printf("Moje ID: %s\n", &buff);
+		}
+		while(1) {
+			memset(buff,0,sizeof(buff));
+			//memset(arggg,0,sizeof(struct slave_arg));
+			c=TEMP_FAILURE_RETRY(read(new_fd,&buff,BUFF_SIZE+22));
+			if(c < 0)
+				ERR("read");
+			if(c > 0) {
+				proceed_part(&buff);
+				printf("Dostałem część: %s\n", &buff);
+			}
+			sleep(1);
+		}
+
+		//if(TEMP_FAILURE_RETRY(close(new_fd))<0)ERR("close");
     }
 
 

@@ -25,12 +25,14 @@
 volatile sig_atomic_t do_work=1 ;
 void* connect_to_slave(void* args);
 void* upload_listener(void* args);
-void* send_part_of_file_to_slaves(void* args);
+void* send_file_part_to_slaves(void* args);
 int get_number_of_slaves(char* filename);
+char*  make_number_string(int k);
 pthread_t upload_listener_tid;
 int slaves_connected = 0;
 struct slave* slave_addresses;
 int slaves_count;
+int system_lock = 0;
 
 pthread_mutex_t lock;
 
@@ -48,6 +50,14 @@ struct slave {
 	char* port;
 	char* addr;
 	int sock;
+	char* slave_id;
+};
+
+struct slave_arg {
+	char* part;
+	int i;
+	int file_id;
+	int part_id;
 };
 
 int sethandler( void (*f)(int), int sigNo) {
@@ -235,6 +245,7 @@ void establish_connection_with_slaves(char* file, int sock) {
 	char* line;
 	char* address;
 	char* port;
+	char* id;
 	size_t len = 0;
 	ssize_t read;
 	int k, i = 0;
@@ -248,11 +259,13 @@ void establish_connection_with_slaves(char* file, int sock) {
         ERR("fopen");
 
 	while ((read = getline(&line, &len, fp)) != -1) {
-	  	address = strtok (line," ");
+	  	id = strtok(line," ");
+		address = strtok(NULL, " ");
 		port = strtok (NULL, " ");
 		printf("Connecting to: %s %s", address, port);
 		slave_addresses[i].port = port;
 		slave_addresses[i].addr = address;
+		slave_addresses[i].slave_id = id;
 		if((pthread_create(&(tids[i]), NULL, connect_to_slave, (void*)&slave_addresses[i])) < 0)
 			ERR("pthread_create:");
 		pthread_join(tids[i], (void**)&((slave_addresses[i]).sock));
@@ -291,7 +304,9 @@ void* connect_to_slave(void* arg) {
 	}
 		//if(errno!=EINTR) ERR("connect");
 
-	printf("CONNECTED PORT: %s", (*slave_addr).port);
+	printf("CONNECTED PORT: %s. TRYING TO SEND: %S\n", (*slave_addr).port, slave_addr -> slave_id);
+
+	bulk_write(sock, slave_addr -> slave_id, strlen(slave_addr -> slave_id));
 
 	return (void*)sock;
 }
@@ -331,6 +346,9 @@ void* upload_listener(void* args) {
 	int fd, c;
 	int number_of_parts;
 	pthread_t* tids;
+	int num;
+	struct slave_arg* slave_args;
+	int i = 0;
 
 	fd = (int)args;
 
@@ -383,10 +401,10 @@ void* upload_listener(void* args) {
 
 	sleep(2);
 	tids = (pthread_t*)calloc(number_of_parts, sizeof(pthread_t));
+	slave_args = (struct slave_arg*)calloc(number_of_parts, sizeof(struct slave_arg));
 
 	while(number_of_parts > 0) {
-		if((pthread_create(&(tids[i-1]), NULL, send_part_of_file_to_slaves, (void*)&slave_addresses[i])) < 0)
-			ERR("pthread_create:");
+
 		memset(buff,0,sizeof(buff));
 		//printf("Waiting for contact from uploader\n");
 		//bulk_write(new_fd, mess, strlen(mess));
@@ -394,9 +412,26 @@ void* upload_listener(void* args) {
 		if(c < 0)
 			ERR("read");
 		else {
-			printf("%s\n", &buff);
+
+			num = rand()%(slaves_count - system_lock - 1);
+
+			slave_args[i].part = malloc(strlen(&buff));
+			strcpy(slave_args[i].part, &buff);
+			slave_args[i].i = num;
+			slave_args[i].file_id = 0;
+			slave_args[i].part_id = i;
+
+			if((pthread_create(&(tids[i]), NULL, send_file_part_to_slaves, (void*)&slave_args[i])) < 0)
+				ERR("pthread_create:");
 		}
+
 		number_of_parts--;
+		i++;
+	}
+
+	for(i = 0; i<number_of_parts; i++)
+	{
+		pthread_join(tids[i], NULL);
 	}
 
 	if(bulk_write(new_fd, mess_ready, strlen(mess_ready))< 0) ERR("write:");
@@ -404,13 +439,73 @@ void* upload_listener(void* args) {
 	return 0;
 }
 
+void* send_file_part_to_slaves(void* args)
+{
+	struct slave_arg* arg;
+	char* mess;
+	char* file_id;
+	char* part_id;
+	int i = 0;
+	arg = (struct slave_arg*)args;
+
+
+	file_id = make_number_string(arg->file_id);
+	part_id = make_number_string(arg->part_id);
+	mess = malloc(PART_SIZE+22);
+
+	sprintf(mess, "%s.%s.%s", file_id, part_id, arg->part);
+	//printf("Przesłana wartość i: %d, przesłana cześć: %s, socket: do ktorego wysle: \n", arg->i, arg->part, slave_addresses[arg->i].sock);
+	printf("Wysyłam: %s\n", mess);
+
+	for(i = 0; i <= system_lock+1; i++)
+		if(bulk_write(slave_addresses[(arg->i)+i].sock, mess, strlen(mess))< 0) ERR("write:");
+
+	return NULL;
+}
+
+char*  make_number_string(int k) {
+
+	int i = 0;
+	int j = 0;
+	char *number = (char *) malloc(sizeof(char) * 10);
+	char *result = (char *) malloc(sizeof(char) * 10);
+
+	for(i =0; i < 10; i++)
+		result[i] = '0';
+
+	sprintf(number, "%d", k);
+
+	for(i = strlen(number)-1; i >=0; i--) {
+		result[9-j] = number[i];
+		j++;
+	}
+	return result;
+}
+
 int main(int argc, char** argv) {
 	int socketfd;
 	int new_flags;
-	if(argc!=3) {
+	int rrr;
+	char rrr_string[sizeof(int)];
+	if(argc<3) {
 		usage(argv[0]);
 		return EXIT_FAILURE;
 	}
+
+	rrr = atoi("0000000016");
+	printf("%d\n", rrr);
+	//rrr = 54;
+	//snprintf(rrr_string, sizeof(int),"D.%d.chuj", rrr);
+	//printf("sizeof: %d\n", sizeof(int));
+
+
+	srand(time(NULL));
+
+	if(argc == 4)
+	{
+		system_lock = atoi(argv[3]);
+	}
+
 	if(sethandler(SIG_IGN,SIGPIPE)) ERR("Seting SIGPIPE:");
 	if(sethandler(sigint_handler,SIGINT)) ERR("Seting SIGINT:");
 	if (pthread_mutex_init(&lock, NULL) != 0) ERR("Mutex init:");
@@ -425,7 +520,7 @@ int main(int argc, char** argv) {
 		ERR("pthread_create:");
 	printf("CHECK 6\n");
 	establish_connection_with_slaves(argv[2], socketfd);
-printf("CHECK 7\n");
+	printf("CHECK 7\n");
 	printf("SYSTEM GOTOWY DO UŻYCIA\n");
 
 	pthread_join(upload_listener_tid, NULL);
