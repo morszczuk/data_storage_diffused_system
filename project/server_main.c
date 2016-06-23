@@ -20,12 +20,13 @@
 
 #define BACKLOG 3
 #define BUFF_SIZE 3000
-#define PART_SIZE 5
+#define PART_SIZE 10
 
 volatile sig_atomic_t do_work=1 ;
 void* connect_to_slave(void* args);
-void* upload_listener(void* args);
+void* uploader_listener(void* args);
 void* send_file_part_to_slaves(void* args);
+void* manage_upload(void* args);
 int get_number_of_slaves(char* filename);
 char*  make_number_string(int k);
 pthread_t upload_listener_tid;
@@ -33,6 +34,8 @@ int slaves_connected = 0;
 struct slave* slave_addresses;
 int slaves_count;
 int system_lock = 0;
+int file_count = 0;
+void wait_for_slaves(int new_fd);
 
 pthread_mutex_t lock;
 
@@ -60,6 +63,16 @@ struct slave_arg {
 	int part_id;
 };
 
+struct listener_thread {
+	struct listener_thread* next;
+	pthread_t tid;
+	struct manage_upload_args* args;
+};
+
+struct manage_upload_args {
+	int new_fd;
+};
+
 int sethandler( void (*f)(int), int sigNo) {
 	struct sigaction act;
 	memset(&act, 0, sizeof(struct sigaction));
@@ -74,19 +87,6 @@ int make_socket(int domain, int type){
 	sock = socket(domain,type,0);
 	if(sock < 0) ERR("socket");
 	return sock;
-}
-
-int bind_local_socket(char *name){
-	struct sockaddr_un addr;
-	int socketfd;
-        if(unlink(name) <0&&errno!=ENOENT) ERR("unlink");
-	socketfd = make_socket(PF_UNIX,SOCK_STREAM);
-	memset(&addr, 0, sizeof(struct sockaddr_un));
-	addr.sun_family = AF_UNIX;
-	strncpy(addr.sun_path,name,sizeof(addr.sun_path)-1);
-	if(bind(socketfd,(struct sockaddr*) &addr,SUN_LEN(&addr)) < 0)  ERR("bind");
-	if(listen(socketfd, BACKLOG) < 0) ERR("listen");
-	return socketfd;
 }
 
 int bind_inet_socket(uint16_t port,int type){
@@ -123,7 +123,7 @@ int add_new_client(int sfd){
 }
 
 void usage(char * name){
-	fprintf(stderr,"USAGE: %s port\n",name);
+	fprintf(stderr,"USAGE: %s port slaves_list_file system_const\n",name);
 }
 
 ssize_t bulk_read(int fd, char *buf, size_t count){
@@ -153,81 +153,6 @@ ssize_t bulk_write(int fd, char *buf, size_t count){
 	return len ;
 }
 
-void calculate(int32_t data[5]){
-	int32_t op1,op2,result,status=1;
-	op1=ntohl(data[0]);
-	op2=ntohl(data[1]);
-	switch((char)ntohl(data[3])){
-		case '+':result=op1+op2;
-		break;
-		case '-':result=op1-op2;
-		break;
-		case '*':result=op1*op2;
-		break;
-		case '/':if(!op2) status=0 ;
-		    else result=op1/op2;
-		    break;
-		default: status=0;
-	}
-	data[4]=htonl(status);
-	data[2]=htonl(result);
-}
-
-void communicateStream(int cfd){
-	ssize_t size;
-	int32_t data[5];
-	if((size=bulk_read(cfd,(char *)data,sizeof(int32_t[5])))<0) ERR("read:");
-	if(size==(int)sizeof(int32_t[5])){
-		calculate(data);
-		if(bulk_write(cfd,(char *)data,sizeof(int32_t[5]))<0&&errno!=EPIPE) ERR("write:");
-	}
-	if(TEMP_FAILURE_RETRY(close(cfd))<0)ERR("close");
-}
-
-void communicateDgram(int fd){
-	struct sockaddr_in addr;
-	int32_t data[5];
-	socklen_t size=sizeof(addr);;
-	if(TEMP_FAILURE_RETRY(recvfrom(fd,(char *)data,sizeof(int32_t[5]),0,&addr,&size))<0) ERR("read:");
-	calculate(data);
-	if(TEMP_FAILURE_RETRY(sendto(fd,(char *)data,sizeof(int32_t[5]),0,&addr,sizeof(addr)))<0&&errno!=EPIPE) ERR("write:");
-}
-
-void doServer(int fdL, int fdT, int fdU){
-	int cfd,fdmax;
-	fd_set base_rfds, rfds ;
-	sigset_t mask, oldmask;
-	FD_ZERO(&base_rfds);
-	FD_SET(fdL, &base_rfds);
-	FD_SET(fdT, &base_rfds);
-	FD_SET(fdU, &base_rfds);
-	fdmax=(fdT>fdL?fdT:fdL);
-	fdmax=(fdU>fdmax?fdU:fdmax);
-	sigemptyset (&mask);
-	sigaddset (&mask, SIGINT);
-	sigprocmask (SIG_BLOCK, &mask, &oldmask);
-	while(do_work){
-		rfds=base_rfds;
-		cfd=-1;
-		if(pselect(fdmax+1,&rfds,NULL,NULL,NULL,&oldmask)>0){
-			if(FD_ISSET(fdL,&rfds)){
-				cfd=add_new_client(fdL);
-				if(cfd>=0)communicateStream(cfd);
-			}
-			if(FD_ISSET(fdT,&rfds)){
-				cfd=add_new_client(fdT);
-				if(cfd>=0)communicateStream(cfd);
-			}
-			if(FD_ISSET(fdU,&rfds))
-				communicateDgram(fdU);
-
-		}else{
-			if(EINTR==errno) continue;
-			ERR("pselect");
-		}
-	}
-	sigprocmask (SIG_UNBLOCK, &mask, NULL);
-}
 
 struct sockaddr_in make_address(char *address, uint16_t port){
 	struct sockaddr_in addr;
@@ -310,7 +235,6 @@ void* connect_to_slave(void* arg) {
 
 	return (void*)sock;
 }
-
 int get_number_of_slaves(char* filename) {
 	int lines = 0;
 	FILE* fp;
@@ -331,35 +255,59 @@ int get_number_of_slaves(char* filename) {
 	return lines;
 }
 
-void listen_for_uploader(int socketfd) {
+void* uploader_listener(void* args) {
 
 
-	printf("CHECK 6\n");
-}
-
-void* upload_listener(void* args) {
-	int are_slaves_connected;
-	char* mess_waiting;
-	char* mess_ready;
-	char buff[BUFF_SIZE];
-	int new_fd;
-	int fd, c;
-	int number_of_parts;
-	pthread_t* tids;
-	int num;
-	struct slave_arg* slave_args;
-	int i = 0;
+	/*ARGUMENTY POTRZEBNE W TEJ FUNKCJI */
+	int fd, new_fd;
+	struct listener_thread* head;
+	struct listener_thread* lt;
+	int new_flags;
 
 	fd = (int)args;
+	//new_flags = fcntl(fd, F_GETFL) | O_NONBLOCK;
+	fcntl(fd, F_SETFL, O_NONBLOCK);
 
+	while(do_work) {
 
-	new_fd = add_new_client(fd);
+		if( (new_fd = add_new_client(fd)) > 0 ) {
+			if( head == NULL) {
+				head = malloc(sizeof(struct listener_thread));
+				head -> tid = NULL;
+				head -> next = NULL;
+				head -> args = malloc(sizeof(struct manage_upload_args));
+				lt = head;
+			}
+			else {
+				lt -> next = malloc(sizeof(struct listener_thread));
+				lt = lt-> next;
+				lt -> tid = NULL;
+				lt -> next = NULL;
+				lt -> args = malloc(sizeof(struct manage_upload_args));
+			}
+
+			lt -> args -> new_fd = new_fd;
+
+			if((pthread_create(&(lt -> tid), NULL, manage_upload, (void*)lt -> args)) < 0)
+				ERR("pthread_create:");
+		}
+		sleep(1);
+	}
+
+	lt = head;
+
+	while(lt != NULL) {
+		pthread_join(lt-> tid, NULL);
+		lt = lt->next;
+	}
+
+	//printf("KOŃCZĘ PROGRAM\n");
+	/*
+
 	mess_waiting = "0";
 	mess_ready = "1";
 	printf("Mam połączenie z uploaderem\n");
-	pthread_mutex_lock(&lock);
-	are_slaves_connected = slaves_connected;
-	pthread_mutex_unlock(&lock);
+
 
 
 	while(!are_slaves_connected && do_work) {
@@ -435,8 +383,121 @@ void* upload_listener(void* args) {
 	}
 
 	if(bulk_write(new_fd, mess_ready, strlen(mess_ready))< 0) ERR("write:");
-
+	*/
 	return 0;
+
+}
+
+void* manage_upload(void* args) {
+
+	char buff[BUFF_SIZE];
+	int new_fd;
+	int c;
+	int number_of_parts;
+	pthread_t* tids;
+	int num;
+	struct slave_arg* slave_args;
+	int i = 0;
+	char mess_ready[10];
+	struct manage_upload_args* data;
+	data = (struct manage_upload_args*)args;
+	int saved_flags;
+
+	number_of_parts = 18;
+
+	new_fd = data -> new_fd;
+
+	sprintf(mess_ready, "%d", PART_SIZE);
+
+	//saved_flags = fcntl(data-> new_fd, F_GETFL);
+	//fcntl(data -> new_fd, saved_flags & ~ O_NONBLOCK);
+
+	wait_for_slaves(data -> new_fd);
+
+	printf("Serwer gotowy! Rozmiar części: %s\n", mess_ready);
+	if(bulk_write(new_fd, mess_ready, strlen(mess_ready))< 0) ERR("write:");
+	printf("Piszę teraz, deskryptor: %d\n", new_fd);
+	//sleep(3);
+	memset(buff,0,sizeof(buff));
+	printf("Czekam teraz, deskryptor: %d, bufor: [%s]\n", new_fd, buff);
+	/*if((c=TEMP_FAILURE_RETRY(recv(data -> new_fd,&buff,BUFF_SIZE, 0))) < 0)
+		ERR("read");
+	printf("c: %d\n", c);*/
+	c = TEMP_FAILURE_RETRY(read(new_fd, &buff, BUFF_SIZE));
+	if(c < 0)
+		ERR("read");
+	else {
+		printf("Liczba części: %s\n", &buff);
+		number_of_parts = atoi(&buff);
+	}
+	printf("Dostalem informacje o czesciach\n" );
+
+	tids = (pthread_t*)calloc(number_of_parts, sizeof(pthread_t));
+	slave_args = (struct slave_arg*)calloc(number_of_parts, sizeof(struct slave_arg));
+
+	printf("Dojdzie tutaj? 2\n");
+	printf("number_of_parts: %d", number_of_parts);
+
+	while(number_of_parts > 0) {
+
+		memset(buff,0,sizeof(buff));
+		//printf("Waiting for contact from uploader\n");
+		//bulk_write(new_fd, mess, strlen(mess));
+		c=TEMP_FAILURE_RETRY(read(data -> new_fd,&buff,PART_SIZE));
+		if(c < 0)
+			ERR("read");
+		else {
+
+			num = rand()%(slaves_count - system_lock - 1);
+
+			slave_args[i].part = malloc(strlen(&buff));
+			strcpy(slave_args[i].part, &buff);
+			slave_args[i].i = num;
+			slave_args[i].file_id = file_count;
+			slave_args[i].part_id = i;
+
+			if((pthread_create(&(tids[i]), NULL, send_file_part_to_slaves, (void*)&slave_args[i])) < 0)
+				ERR("pthread_create:");
+		}
+
+		number_of_parts--;
+		i++;
+	}
+
+	printf("Dojdzie tutaj? 3\n");
+
+	for(i = 0; i<number_of_parts; i++)
+	{
+		pthread_join(tids[i], NULL);
+	}
+
+	file_count++;
+
+	printf("Dojdzie tutaj? 1\n");
+
+	if(bulk_write(new_fd, mess_ready, strlen(mess_ready))< 0) ERR("write:");
+
+
+	return NULL;
+}
+
+void wait_for_slaves(int new_fd) {
+	int are_slaves_connected;
+	char* mess_waiting = "0";
+
+	pthread_mutex_lock(&lock);
+	are_slaves_connected = slaves_connected;
+	pthread_mutex_unlock(&lock);
+
+	while(!are_slaves_connected && do_work) {
+
+		pthread_mutex_lock(&lock);
+		are_slaves_connected = slaves_connected;
+		pthread_mutex_unlock(&lock);
+
+		if(bulk_write(new_fd, mess_waiting, strlen(mess_waiting)) < 0) ERR("bulk_write");
+		sleep(1);
+	}
 }
 
 void* send_file_part_to_slaves(void* args)
@@ -464,7 +525,6 @@ void* send_file_part_to_slaves(void* args)
 }
 
 char*  make_number_string(int k) {
-
 	int i = 0;
 	int j = 0;
 	char *number = (char *) malloc(sizeof(char) * 10);
@@ -485,21 +545,13 @@ char*  make_number_string(int k) {
 int main(int argc, char** argv) {
 	int socketfd;
 	int new_flags;
-	int rrr;
-	char rrr_string[sizeof(int)];
+
+	srand(time(NULL));
+
 	if(argc<3) {
 		usage(argv[0]);
 		return EXIT_FAILURE;
 	}
-
-	rrr = atoi("0000000016");
-	printf("%d\n", rrr);
-	//rrr = 54;
-	//snprintf(rrr_string, sizeof(int),"D.%d.chuj", rrr);
-	//printf("sizeof: %d\n", sizeof(int));
-
-
-	srand(time(NULL));
 
 	if(argc == 4)
 	{
@@ -511,23 +563,28 @@ int main(int argc, char** argv) {
 	if (pthread_mutex_init(&lock, NULL) != 0) ERR("Mutex init:");
 
 	slaves_count = get_number_of_slaves(argv[2]);
+	if(slaves_count <= system_lock) {
+		printf("Zbyt mało slavevów aby system działał!\n");
+		exit(EXIT_FAILURE);
+	}
+
 
 	socketfd = bind_inet_socket(atoi(argv[1]),SOCK_STREAM);
 	//new_flags = fcntl(socketfd, F_GETFL) | O_NONBLOCK;
-	fcntl(socketfd, F_SETFL, new_flags);
+	//fcntl(socketfd, F_SETFL, new_flags);
 
-	if((pthread_create(&(upload_listener_tid), NULL, upload_listener, (void*)socketfd)) < 0)
+	if((pthread_create(&(upload_listener_tid), NULL, uploader_listener, (void*)socketfd)) < 0)
 		ERR("pthread_create:");
-	printf("CHECK 6\n");
+
+
 	establish_connection_with_slaves(argv[2], socketfd);
-	printf("CHECK 7\n");
+
 	printf("SYSTEM GOTOWY DO UŻYCIA\n");
 
 	pthread_join(upload_listener_tid, NULL);
 
-	//doServer(0,fdT, 0);
-	if(TEMP_FAILURE_RETRY(close(socketfd))<0)ERR("close");
 
+	if(TEMP_FAILURE_RETRY(close(socketfd))<0)ERR("close");
 	free(slave_addresses);
 	fprintf(stderr,"Server has terminated.\n");
 	return EXIT_SUCCESS;

@@ -20,6 +20,8 @@
 #define BUFF_SIZE 3000
 #define PART_SIZE 5
 
+int part_size = 0;
+
 int sethandler( void (*f)(int), int sigNo) {
 	struct sigaction act;
 	memset(&act, 0, sizeof(struct sigaction));
@@ -118,7 +120,7 @@ void usage(char * name){
 void send_file(int fd, char* filename) {
 	printf("Przechodzę do wysyłki pliku\n");
 	int fp, sz, parts_count;
-	char part[PART_SIZE];
+	char part[part_size];
 	char parts_c[50];
 	pthread_t tid;
 	int i = 1;
@@ -132,23 +134,27 @@ void send_file(int fd, char* filename) {
 	sz = ftell(fp);
 	rewind(fp);
 
-	parts_count = sz/PART_SIZE;
+	parts_count = sz/part_size;
 
-	if(parts_count%PART_SIZE != 0)
+
+	printf("Rozmiar pliku: %d\n", sz);
+	if(parts_count%part_size != 0)
 		parts_count++;
 
-	printf("Liczba części wykryta: %d\n", parts_count);
+
 	sprintf(parts_c, "%d", parts_count);
 
-	if(bulk_write(fd, parts_c, strlen(parts_c)) < 0) ERR("bulk_write");
+	printf("Liczba części wykryta: %s, długoś: %d\n", parts_c, strlen(parts_c));
+	//if(bulk_write(fd, parts_c, strlen(parts_c)) < 0) ERR("bulk_write");
+	printf("Czekam teraz, deskryptor: %d\n", fd);
+	//sleep(5);
 
-	sleep(3);
-
-	while(fgets(part, PART_SIZE+1, fp) != NULL)
+	while(fgets(part, part_size+1, fp) != NULL)
    	{
-		printf("[CZĘŚĆ %d]: %s\n", i, part);
+		printf("[CZĘŚĆ %d]: %s, długość: %d\n", i, part, strlen(part));
 		if(bulk_write(fd, part, strlen(part)) < 0) ERR("bulk_write");
 		i++;
+		sleep(1);
 	}
 }
 
@@ -173,18 +179,18 @@ int main(int argc, char** argv) {
 	//if(bulk_write(fd,(char *)data,strlen(data))<0) ERR("write:");
 	//printf("Zmieniłem coś\n");
 	printf("Sprawdzam czy serwer jest gotowy\n");
-	while(!server_ready){
+	while(!part_size){
 		memset(data,0,sizeof(data));
 		printf("Jeszcze nie\n");
 		c=TEMP_FAILURE_RETRY(read(fd,&data,BUFF_SIZE));
 		if(c < 0)
 			ERR("read");
 		else {
-			server_ready = atoi(&data);
+			part_size = atoi(&data);
 		}
 		sleep(1);
 	}
-	printf("System gotowy!\n");
+	printf("System gotowy! Rozmiar części: %d\n", part_size);
 
 	server_ready = 0;
 
