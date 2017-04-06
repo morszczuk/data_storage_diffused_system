@@ -180,7 +180,7 @@ char* files_response() {
 	printf("FILES RESPONSE 1\n");
 	files_list = prepare_list_of_files();
 	printf("FILES RESPONSE 2\n");
-	strcat(response,"<!DOCTYPE html><html><head><link rel=\"shortcut icon\" href=\"data:image/x-icon;,\" type=\"image/x-icon\"></head><body><ul>");
+	strcat(response,"<!DOCTYPE html><html><head><link rel=\"shortcut icon\" href=\"data:image/x-icon;,\" type=\"image/x-icon\"></head><body><ol>");
 	printf("FILES RESPONSE 3\n");
 	file_node = files_list -> next;
 	while(file_node -> id != -2){
@@ -195,7 +195,7 @@ char* files_response() {
 	printf("FILES RESPONSE 4\n");
 
 	printf("FILES RESPONSE 5\n");
-	strcat(response, "</ul></body>");
+	strcat(response, "</ol></body>");
 	printf("FILES RESPONSE 6\n");
 	printf("FILES RESPONSE: %s\n", response);
 	return response;
