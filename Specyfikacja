@@ -1,0 +1,12 @@
+1. Stawiamy serwer.
+2. Czekamy na dołączanie się komponentów.
+3. Klient podłącza się z chęcią uploudu plików.
+
+Kto i jak rozdziela pliki?
+Interfejsy graficzny czy http?
+Kiedy jest ta strona?
+
+1. Jakie rzeczy są przez terminal, jakie przez stronę i protokół HTTP? Bo w opisie zadania jest to wszystko pomieszane i nie rozumiem, czy cały projekt jest obsługiwany przez interfejs przeglądarkowy (a jeśli tak, to jak to w ogóle połączyć z C?)
+2. Ile ma  być tych slave'ów, kto je dodaje i w jaki sposób?
+3. Jak te dane są tak naprawdę przechowywane? Slave ma po prostu dostęp do nowego pliku zawierającego część zuplodowanego?
+4. Kto i w jaki sposób dzieli te pliki? Na ile części te pliki są dzielone?

@@ -22,7 +22,7 @@ Writes new file to a file that contains files infos.
 void write_new_file_to_file(struct file_info* new_file) {
 	FILE* fp;
 
-	fp = fopen("files", "ab+");
+	fp = fopen("tmp/files", "ab+");
 	printf("write new file to file 1\n");
 	fprintf(fp, "%d %s %d %d\n", new_file -> file_id, new_file -> filename, new_file -> file_size, new_file -> num_of_parts);
 	printf("write new file to file 2\n");
@@ -46,7 +46,7 @@ void read_file_infos_from_file(struct file_info* files_list) {
 	fp = fopen("tmp/files", "ab+");
 	if (fp == NULL)
 		ERR("fopen");
-		printf("CZYTAM PLIKI Z PLIKUUU\n");
+	printf("CZYTAM PLIKI Z PLIKUUU\n");
 	while ((read = getline(&line, &len, fp)) != -1) {
 		printf("Plik wyryty!!!\n");
 		new_file = malloc(sizeof(struct file_info));

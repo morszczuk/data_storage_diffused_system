@@ -1,0 +1,17 @@
+body {
+    width: 40em;
+    border-left: solid thin black;
+    border-right: solid thin black;
+    margin-left: 1em;
+    margin-right: 1em;
+    padding: 1em;
+    background: white;
+    color: black;
+}
+
+section>h1:before {
+    content: ">";
+}
+section>h2:before {
+    content: ">>";
+}

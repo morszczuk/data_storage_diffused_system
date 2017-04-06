@@ -24,6 +24,10 @@ void usage(char* name){
     fprintf(stderr,"USAGE: %s port slaves_list_file system_reliability size_part\n",name);
 }
 
+void usage_ac(char* name){
+    fprintf(stderr,"USAGE: %s address port [mode[-s: status/-n: add new node/-d: delete node [node_id]]\n",name);
+}
+
 void sigint_handler(int sig) {
 	sm_do_work=0;
 }

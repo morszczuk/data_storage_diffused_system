@@ -42,6 +42,11 @@ int get_number_of_slaves(char* filename) {
 	return lines;
 }
 
+/*************************
+NIE POWINNO TEGO TU BYC!!!!!!!!!!!!!!!!!
+*///////////////////////////////
+
+
 /*//////////////////////////////////////////////
 Reads from file that contains actual slaves info, gets info
 of every slave and adds them to slaves list
@@ -56,7 +61,7 @@ void read_slaves_from_file(char* file, struct node* slaves, int part_size) {
 
 	line = malloc(BUFF_SIZE);
 
-	fp = fopen(file, "r");
+	fp = fopen("server_slaves_list", "r");
 	if (fp == NULL)
         ERR("fopen");
 
@@ -69,6 +74,7 @@ void read_slaves_from_file(char* file, struct node* slaves, int part_size) {
 		slave_node -> port = atoi(strtok (NULL, " "));
 		slave_node -> part_size = part_size;
 		add_new_end(slaves, (void*)slave_node);
+		add_new_slave_status();
 
 		/*
 		printf("CHECK 4\n");

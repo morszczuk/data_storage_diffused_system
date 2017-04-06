@@ -16,7 +16,6 @@
 
 #include "constants.h"
 
-
 volatile sig_atomic_t do_work=1 ;
 
 struct file_info {
@@ -38,6 +37,7 @@ void* read_message(int fd);
 struct file_info* get_file_info(int fd, char* filename, int file_size);
 int send_file_info(int fd, char* filename, int file_size, struct file_info* file_info);
 int wait_for_system_readiness(int fd);
+int send_message(int fd, char* mess_type, char* mess);
 
 //functions definitions
 void usage(char * name){
@@ -55,6 +55,20 @@ int sethandler( void (*f)(int), int sigNo) {
 	if (-1==sigaction(sigNo, &act, NULL))
 		return -1;
 	return 0;
+}
+
+int send_message(int fd, char* mess_type, char* mess) {
+	int size;
+	char* message;
+	int c = 0;
+	size = strlen(mess);
+
+	message = malloc(strlen(mess_type) + 10 + size + 3);
+	sprintf(message, "%s+%10d%s", mess_type, size, mess);
+
+	c = bulk_write(fd, message, strlen(message));
+	free(message);
+	return c;
 }
 
 int make_socket(void){
@@ -126,25 +140,9 @@ int connect_socket(char *name, uint16_t port){
 	return socketfd;
 }
 
-int send_message(int fd, char* mess_type, char* mess) {
-	int size;
-	char* message;
-	int c = 0;
-	size = strlen(mess);
-
-	message = malloc(strlen(mess_type) + 10 + size + 2);
-	sprintf(message, "%s+%10d%s", mess_type, size, mess);
-
-	printf("Przygotowana wiadomosc: %s\n", message);
-	c = bulk_write(fd, message, strlen(message));
-	free(message);
-	return c;
-}
-
 void* read_message(int fd){
 	char header_buff[HEADER_SIZE];
 	char* message_buffer;
-	char* message;
 	char* mess_type;
 	int *file_id, *part_size_int = 0;
 	int mess_size;
@@ -163,7 +161,6 @@ void* read_message(int fd){
 	mess_type = strtok(header_buff, "+");
 	mess_size = atoi(strtok(NULL, "+"));
 	message_buffer = malloc(mess_size);
-	message = malloc(mess_size);
 
 	while((c = bulk_read(fd, message_buffer, mess_size)) != mess_size) {
         if(c < 0)
@@ -188,7 +185,6 @@ void* read_message(int fd){
 		break;
 	}
 
-	free(message);
 	//free(header_buff);
 	free(message_buffer);
     return return_value;
@@ -201,6 +197,7 @@ int wait_for_system_readiness(int fd) {
     while(!system_ready && do_work) {
         part_size = (int*)read_message(fd);
         system_ready = *part_size;
+		free(part_size);
     }
 
 	free(part_size);
@@ -274,17 +271,10 @@ void send_file(int fd, char* filename, struct file_info* file_info, int part_siz
 	while(fgets(part, part_size+1, fp) != NULL)
    	{
 		send_part(fd, part, file_info -> file_id, i++);
-		/*
-		printf("[CZĘŚĆ %d]: %s, długość: %d\n", i, part, strlen(part));
-		if(bulk_write(fd, part, strlen(part)) < 0) ERR("bulk_write");
-		i++;
-		sleep(1);
-		*/
 	}
 
 	fclose(fp);
 }
-
 
 int main(int argc, char** argv) {
     int fd, part_size, file_id;
@@ -304,6 +294,8 @@ int main(int argc, char** argv) {
     if(sethandler(sigint_handler,SIGINT)) ERR("Seting SIGINT:");
 
     fd = connect_socket(argv[1], atoi(argv[2]));
+
+	send_message(fd, "UPL", "");
 
     part_size = wait_for_system_readiness(fd);
 

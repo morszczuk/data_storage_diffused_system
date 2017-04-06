@@ -1,0 +1,287 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!-- saved from url=(0071)http://www.mini.pw.edu.pl/~marcinbo/strona/zadania/unixprojekt2016.html -->
+<html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<title>Marcin Borkowski - strona projektu z UNIXa</title>
+	 
+	<link rel="stylesheet" type="text/css" href="./Marcin Borkowski - strona projektu z UNIXa_files/boro.css" media="screen">
+	<link rel="stylesheet" type="text/css" href="./Marcin Borkowski - strona projektu z UNIXa_files/borop.css" media="print">
+</head>
+<body>
+	<a href="http://www.mini.pw.edu.pl/~marcinbo/strona/glowna/unix.html">Powrót na stronę UNIX</a><br><br>
+
+<center><em>Projekt 2016 - wytyczne</em></center>
+<ul>
+
+	<li>Każdy student jest przydzielony do projektu przez prowadzących.
+	Tematy projektów znajdują się poniżej, Przydział można odczytać w
+	tabeli <a href="http://www.mini.pw.edu.pl/~marcinbo/strona/oceny/b/unixpl.html">ocen</a>.</li>
+	
+	<li>Każdy z projektów jest oceniany przez jedną z osób prowadzących.
+	Gotowy kod należy przedstawić (zgodnie z harmonogramem) osobie wymienionej w projekcie jako
+	oceniający. Projekty nie pokazane osobiście nie będą oceniane! Projekt należy
+	zaprezentować podczas check-point'ów na laboratorium.</li>
+	
+	<li>Każdy z prowadzących ma wyznaczone 2 check-point'y (patrz
+	kalendarium poniżej) na których należy pokazać postęp prac. Finalne
+	oddanie projektów odbędzie się <em> 7 i 8  czerwca 2016 </em>. Końcowe
+	oceny będą znane w ciągu kilku dni. Wpisy można będzie odbierać
+	codziennie 10-14 w 323 g.MiNI.</li>
+	
+	<li>Z projektu można zdobyć 44 lub 52 punkty. Poszczególne etapy są
+		różnie punktowane (patrz harmonogram).  Działanie, ogólny
+		schemat programu i metody synchronizacji są oceniane podczas
+		prezentowania programu (student od razu poznaje tą część
+		oceny), błędy w kodowaniu są sprawdzane po oddaniu kodu.</li>
+	
+	<li>Kod jest oceniany tylko raz tzn. nie można go poprawiać, ale
+	zawsze można się skonsultować z oceniającym przed oddaniem kodu.</li>
+	
+	<li>Żaden projekt nie będzie oceniany po <em>14 czerwca 2016</em>,
+	oczywiście można go oddać wcześniej. Wszystkie projekty są policzone na
+	5 tygodni pracy.</li>
+	
+	<li>Dopracowanie projektu jest również przedmiotem oceny.</li>
+	
+	<li>Oceny z projektu wraz z końcowymi ocenami z laboratorium dla
+	wszystkich studentów będą zamieszczone na stronie <a href="http://www.mini.pw.edu.pl/~marcinbo/strona/oceny/b/unixpl.html">ocen</a></li>
+	
+	<li>Po finalnym okazaniu działającego programu należy go wgrać do archiwum do katalogu
+	wskazanego przez oceniającego.</li>
+
+	<li>W projekcie muszą wystąpić <em>wątki</em> według standardu POSIX,
+	nie wolno używać procesów potomnych.</li>
+	
+	<li>Do synchronizacji używamy <em>tylko</em> mechanizmów POSIX, co
+	wyklucza użycie semaforów SYS V.</li>
+	
+	<li>Wszystkie uwagi zamieszczone przy zadaniach cząstkowych obowiązują
+	także w projekcie.</li>
+	
+	<li>Projekt musi być napisany w języku C.</li>
+	
+	<li>W kodzie należy dopracować wszystkie zasady poprawnego kodowania -
+	długość procedur, zmienne globalne, komentarze przed nietrywialnymi funkcjami.</li>
+	
+	<li>Należy kodować z zachowaniem możliwie dużej przenośności kodu, w
+	szczególności obsługa sytuacji błędnych i wartości zwracanych z funkcji
+	systemowych.</li>
+	
+	<li>Wszystkie projekty używają jedynie prostego interfejsu tekstowego
+	konsoli</li>
+	
+	<li>Gotowy projekt należy spakować do pliku <em>login.tar.gz</em> (bez
+	polskich znaków). Po rozpakowaniu cały projekt ma być w katalogu LOGIN.
+	W katalogu tym ma znajdować sie plik Makefile umożliwiający kompilację
+	projektu za pomocą komendy make (bez nazwy TARGETU).  Kompilacja plików
+	.c ma być przeprowadzona z opcją -Wall. W archiwum tar.gz nie wolno
+	umieszczać żadnych plików poza .c, .h, Makefile i ew. plików
+	wynikających z natury zadania.</li>
+	
+	<li>Tam gdzie zadanie wymaga danych wejściowych w postaci plików należy
+	przygotować jeden zestaw testowy.</li>
+	
+	<li>Wszystkie programy w projekcie wywołane bez parametrów mają
+	pokazywać poprawną składnię wywołania tzw. USAGE.</li>
+
+
+</ul>
+	<table cellspacing="10" align="center" id="kalendarium">
+		<caption><em>Kalendarium:</em></caption>
+		<tbody><tr>
+			<td>4,10,11 V</td>
+			<td>17,18 V</td>
+			<td>24,25 V</td>
+			<td>31V,1VI</td>
+			<td>7,8 VI</td>
+			<td>14 VI</td>
+		</tr>
+		<tr>
+			<td>Konsultacje</td>
+			<td>Check Point 1 </td>
+			<td>Konsultacje</td>
+			<td>Check Point 2 </td>
+			<td>Oddanie finalne</td>
+			<td>Oddanie spóźnione -5p</td>
+		</tr>
+		<tr>
+			<td>-</td>
+			<td>5 (6) p.</td>
+			<td>-</td>
+			<td>15 (18) p.</td>
+			<td>24 (28) p.</td>
+			<td>19 (23) p.</td>
+		</tr>
+		<tr>
+			<td>-</td>
+			<td>min. 3000 <br>znaków opisu</td>
+			<td>-</td>
+			<td>60% kodu</td>
+			<td>100% kodu</td>
+			<td>100% kodu</td>
+		</tr>
+		</tbody></table>
+
+		<p>W nawiasach podano punkty dla większych zadań. Na 1 punkt kontrolny wymagamy opisu (około 2 stron A4) planowanego rozwiązania (ile wątków, jaka między nimi synchronizacja, jak wygląda protokół sieciowy, na jakie moduły/funkcje będzie podzielony program. Na 2 punkt kontorlny ma działać minimum 60% kodu. </p>
+
+
+
+<a href="http://www.mini.pw.edu.pl/~marcinbo/strona/glowna/unix.html">Powrót na stronę UNIX</a><br><br>
+
+<center><em>Projekt <a name="Amb">Amb za 44p</a></em></center> 
+<em>Taksówki</em>
+
+<p>W mieście o regularnym kształcie 10 na 10 przecznic kursują taksówki. Każda
+z nich steruje podłączony do serwera protokołem TCP gracz. Taksówki pozostają w
+ciągłym ruchu o stałej prędkości 1 przecznicy na 10 sekund. Ulice są wąskie i
+nie ma możliwości aby się wyminąć, zatem taksówki czasem ulegają kolizjom. W
+razie kolizji zatrzymują się naprzeciw siebie na 10s po czym obie zawracają.
+Jeśli taksówka dojedzie do granic miasta a sterujący nią gracz nie podejmie
+decyzji o skręcie to taksówka automatycznie skręca w losowym możliwym kierunku
+(prawo,lewo).</p>
+
+<p>Co losowy czas [10-30 sekund] system generuje zlecenie polegające na
+odebraniu pasażera z punktu A i zawiezieniu go do punktu B. Gracz ma za zadanie
+znaleźć się w punkcie A a potem w punkcie B. Znalezienie się w punkcie A lub B
+skutkuje 10 sekundowym postojem. Tylko jeden gracz może zebrać zlecenie, w
+czasie jego wykonania nie może brać innych zleceń. System generuje maksymalnie
+5 zleceń na raz.</p>
+
+<p>Na początku każdy z graczy ma 100zł, każda kolizja kosztuje 50zł. Za każdy
+wykonany kurs gracz dostaje 20zł. Jeśli środki gracza się wyczerpią kończy on
+zabawę.</p>
+
+<p>Nowo podłączony gracz ma zostać umieszczony w losowej pozycji co najmniej 3
+przecznice od wszystkich innych graczy. Jeśli to nie jest możliwe należy
+odrzucić takiego gracza z stosownym komunikatem. Jest to jedyny limit na ilość
+graczy. Jeśli gracz się rozłączy w czasie wykonywania zlecenia to jego kurs
+jest anulowany. Jego taksówka po prostu znika z planszy.</p>
+
+<p>Gracz po podłączeniu co 10 sekund ma automatycznie odrysowywaną mapkę
+sytuacyjną (tekstowa) z zaznaczoną pozycją wszystkich innych graczy wraz z
+pokazanym kierunkiem ich ruchu, wyróżnioną swoja pozycję i kierunek ruchu.
+Jeśli gracz nie ma aktualnie zlecenia to należy pokazać wszystkie otwarte
+zlecenia (punkty odbioru pasażera, jeśli realizuje zlecenie należy pokazać
+tylko punkt docelowy. Pokazujemy też aktualny stan środków gracza.</p>
+
+<p>Gracz w każdej chwili może wydać komendę L lub P, która zmieni kierunek
+ruchu w daną stronę przy pierwszej nadarzającej się okazji. Decyzję można
+zmienić w każdej chwili (byle przed skrętem), stara dyspozycja jest wtedy
+anulowana. Jeśli na najbliższym skrzyżowaniu nie ma możliwości wybranego skrętu
+(jada po obrzeżu miasta to dyspozycja jest anulowana.</p>
+
+<p>Każdy gracz ma być obsługiwany po stronie serwera przez oddzielny wątek.
+Jako klienta można użyć telnet.</p>
+
+<p><em>Oceniający: Marcin Borkowski</em></p>
+
+<a href="http://www.mini.pw.edu.pl/~marcinbo/strona/glowna/unix.html">Powrót na stronę UNIX</a><br><br>
+
+<center><em>Projekt <a name="Bmb">Bmb</a> za 52p</em></center>
+
+<p>Ten sam temat co Amb z następującymi modyfikacjami:</p><ol>
+	<li>Komunikacja po UDP, brak kontaktu z klientem powyżej 5s. oznacza rozłączenie. Klientem nie może być telnet.</li>
+	<li>Zlecenia nie są generowane przez system, są to gracze drugiego typu. Klient podłącza się, wybiera punkty A i B po czym ogląda wizualizację (wyróżniamy aktualną pozycję i punkt docelowy)  aż do momentu osiągnięcia punktu B, wtedy jest rozłączany. Za obsługę każdego gracza typu klient odpowiada oddzielny wątek po stronie serwera.</li>
+	<li>Jeśli gracz typu taksówkarz rozłączy się w trakcie wykonywania zlecenia, jego pasażer jest pozostawiany w miejscu zniknięcia taksówki i czeka na innego taksówkarza.</li>
+	<li>Rozłączenie się klienta nowego typu nie anuluje kursu, taksówkarz normalnie kończy go. Jeśli rozłączy się tez taksówkarz to kurs jest anulowany.</li>
+</ol><p></p>
+
+<p><em>Oceniający: Marcin Borkowski</em></p>
+<a href="http://www.mini.pw.edu.pl/~marcinbo/strona/glowna/unix.html">Powrót na stronę UNIX</a><br><br>
+
+<center><em>Projekt <a name="Cjk">Cjk</a> za 44p</em></center>
+<h1 id="system-obsługi-wyścigów-żółwi">System obsługi wyścigów żółwi</h1>
+<p>W wyścigu żółwi startują zgłoszone wcześniej żółwie lądowe (dowolna liczba). Żółwie ścigają się na zamkniętym torze, mają do wykonania zadaną n okrążeń. Tor posiada k punktów kontrolnych, punkt kontrolny 0 na linii startu i kolejno ponumerowane punkty coraz dalej od startu. W trakcie wyścigu sędziowie obserwują tor i odnotowują osiągnięcie kolejnych punktów kontrolnych przez poszczególne żółwie. W sezonie odbywa się wiele wyścigów, na koniec sezonu podliczane są punkty. Najlepszy żółw w sezonie otrzymuje Złotą Sałatę.</p>
+<p>Punktowane są pierwsze 4 miejsca w wyścigu:</p>
+<ol style="list-style-type: decimal">
+<li>25 punktów</li>
+<li>10 punktów</li>
+<li>5 punktów</li>
+<li>1 punkt</li>
+</ol>
+<h2 id="uwagi-wstępne">Uwagi wstępne</h2>
+<p>Projekt należy wykonać w zgodzie z wymogami dotyczącymi wszystkich projektów, w szczególności: komunikacja po protokole IP, zastosowanie wątków POSIX. Kod źródłowy ma spełniać wymogi co do jakości.</p>
+<h2 id="opis-projektu">Opis projektu</h2>
+<p>Napisać system do obsługi takich wyścigów dla Międzynarodowej Federacji Żółwiowej. System musi realizować następujące zadania:</p>
+<ul>
+<li>definiowanie toru wyścigowego: nazwa, długość, liczbę i pozycje (odległości od startu) punktów kontrolnych, liczbę okrążeń,</li>
+<li>definiowanie zawodników -- żółwi: imię, wiek, waga, numer startowy,</li>
+<li>zdefiniowanie wyścigu: tor i zawodnicy biorący udział,</li>
+<li>przeprowadzenie wyścigu: rejestrowanie przez sędziów zawodników na kolejnych punktach kontrolnych,</li>
+<li>generowanie relacji na żywo z wyścigu dla kibiców,</li>
+<li>prowadzenie tabeli wyników podsumowującej punkty z wszystkich wyścigów.</li>
+</ul>
+<p>System musi składać się z następujących komponentów:</p>
+<ul>
+<li>serwera, który przechowuje wszystkie dane i koordynuje wyścig,</li>
+<li>programu klienta (lub klientów) dla organizatorów wyścigu, pozwalających:
+<ul>
+<li>wprowadzać informacje o wyścigach, zawodnikach, torach,</li>
+<li>rozpoczynać i kończyć wyścig,</li>
+<li>rejestrować pojawianie się żółwi na kolejnych checkpointach,</li>
+<li>rozpoczynać nowy sezon (resetować tabelę punktów),</li>
+</ul></li>
+<li>programu klienta dla relacjonujących wyścig, które pozwalają na:
+<ul>
+<li>wyświetlanie na żywo informacji o pojawieniu się żółwi na danych checkpoincie,</li>
+<li>wyświetlanie aktualnej kolejności żółwi w wyścigu na podstawie kolejności pojawiania się na checkpointach,</li>
+<li>wyświetlanie tabeli punktowej (uwzględniającej tylko zakończone wyścigi).</li>
+</ul></li>
+</ul>
+<p>Można przyjąć ograniczenie pozwalającego na podłączenie tylko jednego klienta organizatorów na raz. Liczba klientów relacjonujących nie może być ograniczona inaczej niż przez dostępność zasobów systemowych. Klient relacjonujący może podłączyć się w dowolnym momencie.</p>
+<p>Serwer musi przechowywać dane w formie trwałej i musi być możliwość zamknięcia serwera, a następnie wznowienia z poprzednim stanem. W przypadku zamknięcia w trakcie trwania wyścigu, dopuszczalne jest utracenie danych o trwającym wyścigu.</p>
+<p>Interfejs użytkownika wszystkich aplikacji i protokół komunikacyjny należy zaprojektować samodzielnie, tak aby zapewnić zadowalający poziom niezawodności.</p>
+<h2 id="uwagi-dodatkowe">Uwagi dodatkowe</h2>
+<p>Zawieszenie się lub utrata połączenia do dowolnego klienta nie może powodować zatrzymania systemu.</p>
+<p>Wszystkie rozłączenia należy sensownie obsługiwać.</p>
+<p><em>Oceniający: Jan Karwowski</em></p> 
+<a href="http://www.mini.pw.edu.pl/~marcinbo/strona/glowna/unix.html">Powrót na stronę UNIX</a><br><br>
+
+
+<center><em>Projekt <a name="Djk">Djk za 52p</a></em></center>
+<h1 id="rozproszony-system-przechowywania-danych">Rozproszony system przechowywania danych</h1>
+<p>Przygotować system, który pozwoli na przechowywanie plików sposób rozproszony: części plików będą rozdzielone pomiędzy wiele węzłów, każdy przechowuje tylko cześć pliku.</p>
+<h2 id="uwagi-wstępne-1">Uwagi wstępne</h2>
+<p>Projekt należy wykonać w zgodzie z wymogami dotyczącymi wszystkich projektów, w szczególności: komunikacja po protokole IP, zastosowanie wątków POSIX. Kod źródłowy ma spełniać wymogi co do jakości.</p>
+<h2 id="opis">Opis</h2>
+<p>System ma się składać z:</p>
+<ul>
+<li>serwera koordynującego (master), który nie przechowuje danych. Serwer ten udostępnia interfejs klientom chcącym umieścić plik na serwerze lub go ściągnąć i zarządza całą komunikacją z węzłami przechowującymi,</li>
+<li>serwerów przechowujących (slave), które przechowują fragmenty, plików,</li>
+<li>programu klienta do uploadu plików,</li>
+<li>programu klienta do zarządzania i monitorowania.</li>
+</ul>
+<p>Rolę klienta ma pełnić przeglądarka internetowa. Należy zaimplementować taki fragment protokołu HTTP, żeby możliwa była komunikacja z jedną z przeglądarek: Firefox, Chrome w zakresie podstawowego ściągania plików (podstawowej: w szczególności bez możliwości wznawiania).</p>
+<p>System ma zapewniać konfigurowalny poziom niezawodności -- liczbę naturalną. Poprzez poziom niezawodności rozumiana jest maksymalna liczba węzłów slave, których usunięcie z systemu nie spowoduje utraty zawartości pliku. <em>Poziom niezawodności dotyczy plików wgrywanych w danym momencie. Nie jest konieczne poprawianie rozmieszczenia pliku po usunięciu slave'a</em></p>
+<p>Wszystkie dane i konfiguracja systemu mają być przechowywane w sposób trwały, umożliwiający zatrzymanie rozwiązania i jego ponowne uruchomienie.</p>
+<h2 id="serwer-główny-master">Serwer główny (master)</h2>
+<p>Koordynuje działanie całego systemu. Zna listę wszystkich węzłów slave. Akceptuje połączenia od klientów do uploadu, HTTP, zarządzającego.</p>
+<p>Interfejs HTTP serwera pod ścieżką / serwuje dokument HTML z listą plików na serwerze.</p>
+<p>Serwer główny może przechowywać metadane dotyczące plików i ich położenia, ale nie może przechowywać zawartości plików.</p>
+<h2 id="serwer-przechowujący-slave">Serwer przechowujący (slave)</h2>
+<p>Przechowuje właściwe zawartości plików, komunikuje się tylko z serwerem master.</p>
+<h2 id="klient-administracyjny">Klient administracyjny</h2>
+<p>Pozwala na dodanie nowego węzła slave, usunięcie znanego węzła slave oraz wyświetlanie na żywo zdarzeń z serwera:</p>
+<ul>
+<li>dodanie pliku</li>
+<li>pobranie pliku</li>
+<li>utrata połączenia ze slave</li>
+<li>nawiązanie połączenia ze slave</li>
+</ul>
+<h2 id="klient-do-wgrywania-plików">Klient do wgrywania plików</h2>
+<p>Pozwala wgrać plik z dysku na serwer.</p>
+<h2 id="nawiązywanie-i-utrata-połączenia-ze-slave">Nawiązywanie i utrata połączenia ze slave</h2>
+<p>Rozwiązanie ma zapewniać sensowne zachowanie przy utracie połączenia ze slave lub przed jego nawiązaniem, w szczególności:</p>
+<ul>
+<li>system uzyskuje pełną funkcjonalność po starcie dopiero gdy nawiąże połączenie ze wszystkimi slave'ami,</li>
+<li>system da się wystartować niezależnie od kolejności uruchamiania węzłów master i slave,</li>
+<li>przy utracie połączenia ze slave następuje próba ponowienia, powtarzana w nieskończoność (lub do momentu usunięcia tego slave z klastra). W tym czasie system może nie obsługiwać operacji na plikach,</li>
+</ul>
+<p>Po usunięciu z systemu liczby slave większej niż poziom niezawodności, który powoduje brak pewnej części pliku, taki plik zostaje w całości usunięty z systemu.</p>
+<p><strong>Wyraźnie rozróżniamy sytuację braku połączenia ze slave (tymczasowa) i usunięcia slave z klastra (permanentna)</strong></p>
+<h2 id="szczegóły-implementacji">Szczegóły implementacji</h2>
+<p>Niewyspecyfikowane protokoły sieciowe i interfejsy użytkownika należy zaprojektować samodzielnie.</p>
+<p>Zawieszenie się, zablokowanie, zatrzymanie lub rozłączenie dowolnego klienta nie może powodować wstrzymania pracy serwera.</p>
+<p><em>Oceniający: Jan Karwowski</em></p> 
+<a href="http://www.mini.pw.edu.pl/~marcinbo/strona/glowna/unix.html">Powrót na stronę UNIX</a><br><br>
+
+</body></html>

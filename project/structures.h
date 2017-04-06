@@ -20,8 +20,7 @@ struct slave_node {
 	int part_size;
 };
 
-struct uploader_thread {
-	struct uploader_thread* next;
+struct client_thread_arg{
 	pthread_t tid;
 	int new_fd;
 	int fd;
@@ -30,6 +29,7 @@ struct uploader_thread {
     pthread_mutex_t* lock;
     struct node* slaves;
     int system_reliability;
+    char* type;
 };
 
 struct part_info {
@@ -57,6 +57,11 @@ struct handle_part_arg{
     struct part_info* part;
     struct node* slaves;
     int system_reliability;
+};
+
+struct message{
+    char* type;
+    char* message;
 };
 
 #endif

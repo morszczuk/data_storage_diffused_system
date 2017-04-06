@@ -26,6 +26,7 @@ extern int system_ready;
 extern pthread_mutex_t lock_lock;
 
 void usage(char* name);
+void usage_ac(char* name);
 void sigint_handler(int sig);
 void sigint_handler_uc(int sig);
 int sethandler( void (*f)(int), int sigNo);

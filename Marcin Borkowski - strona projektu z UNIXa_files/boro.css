@@ -1,0 +1,164 @@
+/*---maindocumentstyle---*/
+
+html{
+	text-align:left;
+	margin-left:0.2cm;
+	margin-right:0.2cm;
+	margin-top:0.2cm;
+	background-color:black;
+	font-family:Verdana,Courier,Monospace;
+	color:#00FF00
+}
+body{
+	text-align:left;
+	margin-left:0.2cm;
+	margin-right:0.2cm;
+	margin-top:0.2cm;
+	background-color:black;
+	font-family:Verdana,Courier,Monospace;
+	color:#00FF00
+}
+
+div.plain{
+	font-family:Verdana,Courier,Monospace;
+	background-color:black;
+	color:#00FF00
+}
+div.small{
+	font-family:Verdana,Courier,Monospace;
+	background-color:black;
+	color:#00FF00;
+	font-size:smaller
+}
+
+em{
+	font-family:Verdana,Courier,Monospace;
+	background-color:black;
+	color:#88ff88;
+	font-style:normal
+}
+
+a{
+	font-family:Verdana,Courier,Monospace;
+	background-color:black;
+	color:#66ff66
+}
+
+th{
+	font-family:Verdana,Courier,Monospace;
+	background-color:black;
+	color:#88ff88;
+	font-weight:normal
+}
+
+th.dasht{
+	border-right:1pt dashed #00FF00;
+	font-family:Verdana,Courier,Monospace;
+	background-color:black;
+	color:#88ff88
+}
+td.dashtr{
+	border-top:1pt dashed #00FF00;
+	border-right:1pt dashed #00FF00;
+	font-family:Verdana,Courier,Monospace;
+	background-color:black;
+	color:#00FF00
+}
+td.dashtt{
+	border-top:1pt dashed #00FF00;
+	font-family:Verdana,Courier,Monospace;
+	background-color:black;
+	color:#00FF00
+}
+td.dasht{
+	border-top:1pt dashed #00FF00;
+	border-right:1pt dashed #00FF00;
+	font-family:Verdana,Courier,Monospace;
+	background-color:black;
+	color:#00FF00
+}
+
+th.edasht{
+	border-right:1pt dashed #00FF00;
+	font-family:Verdana,Courier,Monospace;
+	background-color:#003000;
+	color:#88ff88
+}
+td.edashtr{
+	border-top:1pt dashed #00FF00;
+	border-right:1pt dashed #00FF00;
+	font-family:Verdana,Courier,Monospace;
+	background-color:#003000;
+	color:#00FF00
+}
+td.edashtt{
+	border-top:1pt dashed #00FF00;
+	font-family:Verdana,Courier,Monospace;
+	background-color:#003000;
+	color:#00FF00
+}
+td.edasht{
+	border-top:1pt dashed #00FF00;
+	border-right:1pt dashed #00FF00;
+	font-family:Verdana,Courier,Monospace;
+	background-color:#003000;
+	color:#00FF00
+}
+
+table.dasht , table.sortable {
+	border:1pt dashed #00FF00;
+	font-size:smaller
+}
+
+table.doublet{
+	border:3pt double #00FF00
+}
+
+.bigtext{
+	font-size:500%
+}
+.medtext{
+	font-size:250%
+}
+.slidetext{
+	font-size:150%;
+	line-height:120%
+}
+.smallertext{
+	font-size:80%
+}
+
+a.slide{
+	font-family:Verdana,Courier,Monospace;
+	background-color:black;
+	color:#00ff00;
+	text-decoration:none
+}
+.editfiled{
+	color:#00FF00;
+	background-color:#003000;
+	text-decoration:none;
+	font-family:Verdana,Courier,Monospace;
+	border:1pt solid #004000
+}
+.editfieldlock{
+	color:#00BB00;
+	background-color:#003000;
+	text-decoration:none;
+	font-family:Verdana,Courier,Monospace;
+	border:1pt solid #004000;
+	font-size:smaller;
+}
+a.editfield{
+	color:#00FF00;
+	background-color:#003000;
+	text-decoration:none;
+	font-family:Verdana,Courier,Monospace;
+	font-size:smaller;
+}
+.notka{
+	font-size:60%;
+	background-color:black;
+	color:red;
+	vertical-align:sub
+}

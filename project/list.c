@@ -50,9 +50,7 @@ int add_new_end(struct node* list, void* new_elem) {
 
     new_node -> data = new_elem;
 
-    printf("Dodajemy. pID: %d | ppID: %d\n", p -> id, pp -> id);
     while(pp -> id != -2){
-        printf("Mijam kolejny element\n");
         p = p -> next;
         pp = pp -> next;
     }
