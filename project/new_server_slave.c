@@ -41,6 +41,7 @@ int add_new_client(int sfd);
 ssize_t bulk_read(int fd, char *buf, size_t count);
 ssize_t bulk_write(int fd, char *buf, size_t count);
 void save_part_to_file(struct part_info* part_info, struct slave_info* slave_info);
+char* read_part_from_file(int slave_id, int file_id, int part_id);
 struct part_info* read_part_info_from_mess(char* buff);
 struct slave_info* get_id(int fd);
 void handle_messages(int fd, struct slave_info* slave_info);
@@ -122,6 +123,20 @@ ssize_t bulk_write(int fd, char *buf, size_t count){
 	return len ;
 }
 
+int send_message(int fd, char* mess_type, char* mess) {
+	int size;
+	char* message;
+	int c = 0;
+	size = strlen(mess);
+
+	message = malloc(strlen(mess_type) + 10 + size + 3);
+	sprintf(message, "%s+%10d%s", mess_type, size, mess);
+
+	c = bulk_write(fd, message, strlen(message));
+	free(message);
+	return c;
+}
+
 struct part_info* read_part_info_from_mess(char* buff) {
 	char* part_id;
 	char* file_id;
@@ -137,6 +152,32 @@ struct part_info* read_part_info_from_mess(char* buff) {
 	part_info -> part_id = atoi(part_id);
 
 	return part_info;
+}
+
+int send_part(char* buff, struct slave_info* slave, int fd) {
+	char* file_id;
+	char* part_id;
+	char* part;
+	char* mess;
+
+	file_id = atoi(strtok(buff, "+"));
+	part_id = atoi(strtok(NULL, "+"));
+
+	printf("ODCZYTALEM FILE_ID: %d, PART_ID: %d\n\n\n\n", file_id, part_id);
+
+	part = read_part_from_file(slave -> slave_id, file_id, part_id);
+
+	//mess = malloc(23 + strlen(part));
+	//sprintf(mess, "%10d+%10d+%s", file_id, part_id, part);
+	mess = malloc(strlen(part));
+	sprintf(mess, "%s", part);
+
+	send_message(fd, "D", mess);
+
+	printf("Wysłana wiadomość: %s\n\n\n", mess);
+
+	//printf("A OTOTOTOOT ODCZYTANY PART: %s", part);
+
 }
 
 struct slave_info* read_slave_info_from_mess(struct message* mess) {
@@ -212,6 +253,29 @@ void save_part_to_file(struct part_info* part_info, struct slave_info* slave_inf
 	save_info_about_part_slave(part_info, slave_info);
 }
 
+char* read_part_from_file(int slave_id, int file_id, int part_id) {
+	char part_path[BUFF_SIZE];
+	FILE* fp;
+	char* part;
+	long fsize;
+
+	sprintf(part_path, "tmp/parts/%d/%d/%d", slave_id, file_id, part_id);
+
+	fp = fopen(part_path, "rb");
+
+	fseek(fp, 0, SEEK_END);
+	fsize = ftell(fp);
+	fseek(fp, 0, SEEK_SET);  //same as rewind(f);
+
+	part = malloc(fsize + 1);
+	fread(part, fsize, 1, fp);
+	fclose(fp);
+
+	part[fsize] = 0;
+
+	return part;
+}
+
 void handle_messages(int fd, struct slave_info* slave_info) {
 	struct part_info* part_info;
 	struct message* message;
@@ -223,10 +287,13 @@ void handle_messages(int fd, struct slave_info* slave_info) {
 			case 80:
 				part_info = read_part_info_from_mess(message -> message);
 				save_part_to_file(part_info, slave_info);
-			break;
+				break;
+			case 68:
+				send_part(message -> message, slave_info, fd);
+				break;
 		}
         printf("Czekam na wiadomość\n");
-        sleep(1);
+        sleep(0.1);
     }
 }
 

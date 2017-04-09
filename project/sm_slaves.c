@@ -73,6 +73,7 @@ void read_slaves_from_file(char* file, struct node* slaves, int part_size) {
 		sprintf(slave_node -> addr, "%s", addr);
 		slave_node -> port = atoi(strtok (NULL, " "));
 		slave_node -> part_size = part_size;
+		slave_node -> active = 0;
 		add_new_end(slaves, (void*)slave_node);
 		add_new_slave_status();
 
@@ -127,6 +128,7 @@ void* slave_connect(void* args) {
 	}
 
 	slave -> sock = sock;
+	slave -> active = 1;
 
 	sprintf(mess, "%10d+%10d", slave -> slave_id, slave -> part_size);
 	send_message(sock, "R", mess);

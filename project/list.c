@@ -79,6 +79,32 @@ void free_list(struct node* list){
     free(p);
 }
 
+struct node* find_elem(struct node* list, int _id) {
+  struct node *pp;
+  pp = list -> next;
+
+  while(pp -> id != -2) {
+    if(pp -> id == _id)
+      return pp;
+    pp = pp -> next;
+  }
+
+  return pp;
+}
+
+struct node* find_active_elem(struct node* list, int _id) {
+  struct node *pp;
+  pp = list -> next;
+
+  while(pp -> id != -2 ) {
+    if(pp -> id == _id && (((struct slave_node*)(pp -> data)) -> active))
+      return pp;
+    pp = pp -> next;
+  }
+
+  return pp;
+}
+
 int count_elems(struct node* list){
     struct node* p, *pp;
     int i = 0;
@@ -91,5 +117,26 @@ int count_elems(struct node* list){
         pp = pp -> next;
         i++;
     }
+    return i;
+}
+
+int count_active_slaves(struct node* list){
+    struct node* p, *pp;
+    struct slave_node* slave;
+    int i = 0;
+
+    printf("\n\n\n Count active slaves 0");
+    p = list;
+    pp = list -> next;
+    printf("\n\n\n Count active slaves 1");
+    while(pp -> id != -2){
+        p = p -> next;
+        pp = pp -> next;
+        slave = (struct slave_node*)(p -> data);
+        if(slave -> active)
+          i++;
+    }
+
+    printf("\n\n\n Count active slaves 2\n\n\n");
     return i;
 }

@@ -21,7 +21,7 @@
 #include "structures.h"
 
 void read_mess(int fd, struct message* mess);
-void read_html_request(int fd);
+//void read_html_request(int fd);
 void read_first_client_mess(int fd, struct message* mess);
 char* files_response();
 

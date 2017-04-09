@@ -40,10 +40,10 @@ void* read_message_sm(int fd){
     header_buff = malloc(HEADER_SIZE+1);
 	//mess_size_s = malloc(11);
 
-    while((c = read(fd, header_buff, HEADER_SIZE)) < 0) {
-        if(c < 0)
-        	ERR("read");
-    }
+  while((c = read(fd, header_buff, HEADER_SIZE)) < 0) {
+      if(c < 0)
+      	ERR("read");
+  }
 
 	header_buff[HEADER_SIZE] ='\0';
 	mess_type = strtok(header_buff, "+");

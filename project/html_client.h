@@ -22,11 +22,12 @@
 #include "list.h"
 #include "statuses_list.h"
 
-void read_html_request(int fd);
+void read_html_request(int fd, struct node* slaves);
 void serve_files_page(int fd);
 char* files_response();
 struct node* prepare_list_of_files();
 void* get_file_part(void* args);
-void serve_file(int fd, int file_id);
+void serve_file(int fd, int file_id, struct node* slaves);
+int get_part_from_slave(struct slave_node* slave, struct part_info* part);
 
 #endif

@@ -68,7 +68,7 @@ int handle_upload_clients(int fd, int part_size, struct file_info* files_list,
 			read_first_client_mess(new_fd, mess);
 			if(strcmp(mess -> type, "GET") == 0) {
 				printf("NOWY KLIENT I TO HTML!!!!: %s\n");
-				read_html_request(new_fd);
+				read_html_request(new_fd, slaves);
 			}
 			else {
 				printf("NOWY KLIENT TYPU: %s\n", mess -> type);
@@ -144,6 +144,7 @@ void* handle_part(void* args){
 	struct part_info* part;
 	struct node* slave;
 	int slaves_count = 0;
+	int active_slaves_count = 0;
 	int diff = 0;
 	int i = 0;
 	struct slave_node* slave_node;
@@ -154,34 +155,39 @@ void* handle_part(void* args){
 	pthread_mutex_lock(&lock_lock);
 	arg = (struct handle_part_arg*)args;
 	part = arg -> part;
-	printf("Handle part 2\n");
+	//printf("Handle part 2\n");
 	printf("Otrzymane dane: [FILE_ID: %d] [PART_ID: %d] [PART: %s]\n", part -> file_id, part -> part_id, part -> data);
 	slaves_count = count_elems(arg -> slaves);
-	printf("Handle part 3\n\n\n");
-	diff = rand()%(slaves_count - (arg -> system_reliability ) - 1);
-	printf("Handle part 3.0.1 [DIFF: %d]\n\n\n", diff);
+
+	printf("\n\n\n\n\n PRZED LICZENIEM AKTYWNYCH SLAVEOW \n\n\n\n\n");
+	active_slaves_count = count_active_slaves(arg -> slaves);
+	printf("\n\n\n\n\nAKTYWNYCH SLAVE'ÓW: %d\n\n\n\n\n", active_slaves_count);
+	//printf("Handle part 3\n\n\n");
+	diff = rand()%(slaves_count - (arg -> system_reliability ));
+	//printf("\n\n\n\n\nWYLOSOWANY DIFF: %d\n\n\n\n\n", diff);
+	//printf("Handle part 3.0.1 [DIFF: %d]\n\n\n", diff);
 	slave = arg -> slaves -> next;
-	printf("Handle part 3.0,2\n\n\n");
+	//printf("Handle part 3.0,2\n\n\n");
 	while(i < diff) {
-		printf("Handle part 3.0.3\n\n\n");
+		//printf("Handle part 3.0.3\n\n\n");
 		slave = slave -> next;
-		printf("Handle part 3.0.4\n\n\n");
+		//printf("Handle part 3.0.4\n\n\n");
 		printf("Handle part 3.1 [NODE ID: %d]\n", slave -> id);
-		printf("Handle part 3.0.5\n\n\n");
+		//printf("Handle part 3.0.5\n\n\n");
 		i++;
 	}
-	printf("Handle part 3.2\n\n\n");
-	printf("Handle part 4\n");
+	//printf("Handle part 3.2\n\n\n");
+	//printf("Handle part 4\n");
 	mess = malloc(23 + strlen(part -> data));
-	printf("Handle part 4.0.1\n");
+	//printf("Handle part 4.0.1\n");
 	sprintf(mess, "%10d+%10d+%s", part -> file_id, part -> part_id, part -> data);
-	printf("Handle part 4.0.2\n");
-	for(i = 0; i < (arg -> system_reliability) + 1; i++) {
-		printf("Handle part 4.1\n");
+	//printf("Handle part 4.0.2\n");
+	for(i = 0; i < ((arg -> system_reliability) + 1); i++) {
+		//printf("Handle part 4.1\n");
 
-		printf("Handle part 4.2\n");
+		//printf("Handle part 4.2\n");
 		slave_node = (struct slave_node*)(slave -> data);
-		printf("Handle part 4.3\n");
+		//printf("Handle part 4.3\n");
 		send_message(slave_node-> sock, "P", mess);
 		slave = slave -> next;
 	}

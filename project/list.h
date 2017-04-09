@@ -27,6 +27,10 @@ int add_new_end(struct node* list, void* new_elem);
 
 void free_list(struct node* list);
 
+struct node* find_elem(struct node* list, int _id);
+
 int count_elems(struct node* list);
+
+int count_active_slaves(struct node* list);
 
 #endif

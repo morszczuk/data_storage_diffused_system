@@ -18,6 +18,7 @@ struct slave_node {
 	pthread_t connection_tid;
 	struct slave_node* next;
 	int part_size;
+  int* active;
 };
 
 struct client_thread_arg{
@@ -36,6 +37,11 @@ struct part_info {
     int file_id;
     int part_id;
     char* data;
+};
+
+struct get_file_part_arg {
+  struct part_info* part;
+  struct node* slaves;
 };
 
 struct node {
