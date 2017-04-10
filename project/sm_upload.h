@@ -29,9 +29,12 @@ int handle_upload_clients(int fd, int part_size, struct file_info* files_list,
     pthread_mutex_t* lock, struct node* slaves, int system_reliability);
 void* handle_part(void* args);
 void distribute_file(int fd, struct file_info* new_file, struct node* slaves, int system_reliability);
-void send_size_mess(int fd, int part_size);
-struct file_info* get_file_info(int fd, struct file_info* files_list);
+void send_status_messages(int fd);
+void handle_delete_node(int fd, struct node* slaves);
+void delete_slave(int slave_id, struct node* slaves);
 void* manage_client(void* args);
 void wait_for_system_readiness(int fd, pthread_mutex_t* lock);
+void send_size_mess(int fd, int part_size);
+struct file_info* get_file_info(int fd, struct file_info* files_list);
 
 #endif

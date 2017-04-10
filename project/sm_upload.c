@@ -16,6 +16,9 @@
 
 #include "sm_upload.h"
 
+/*//////////////////////////////////////////////
+Creates new client_thread_arg struct with proper data
+//////////////////////////////////////////////*/
 struct client_thread_arg* new_client_thread_arg(int fd, int new_fd,int part_size,struct file_info* files_list,
 	pthread_mutex_t* lock, struct node* slaves, int system_reliability, char* type) {
 		struct client_thread_arg* up_thread;
@@ -83,10 +86,13 @@ int handle_upload_clients(int fd, int part_size, struct file_info* files_list,
 
 	free_list(client_threads_list);
 	free(mess);
-	//free(upload_threads);
 	return 0;
 }
 
+/*//////////////////////////////////////////////
+Chooses slaves for sending part to (taking into consideration active slaves and system reliability)
+and sends part to those slaves.
+//////////////////////////////////////////////*/
 void* handle_part(void* args){
 	struct handle_part_arg *arg;
 	struct part_info* part;
@@ -107,14 +113,11 @@ void* handle_part(void* args){
 	printf("Otrzymane dane: [FILE_ID: %d] [PART_ID: %d] [PART: %s]\n", part -> file_id, part -> part_id, part -> data);
 	slaves_count = count_elems(arg -> slaves);
 
-	printf("\n\n\n\n\n PRZED LICZENIEM AKTYWNYCH SLAVEOW \n\n\n\n\n");
 	active_slaves_count = count_active_slaves(arg -> slaves);
-	printf("\n\n\n\n\nAKTYWNYCH SLAVE'ÓW: %d\n\n\n\n\n", active_slaves_count);
 	diff = rand()%(slaves_count - (arg -> system_reliability ));
 	slave = arg -> slaves -> next;
 	while(i < diff) {
 		slave = slave -> next;
-		printf("Handle part 3.1 [NODE ID: %d]\n", slave -> id);
 		i++;
 	}
 	mess = malloc(23 + strlen(part -> data));
@@ -124,12 +127,13 @@ void* handle_part(void* args){
 		send_message(slave_node-> sock, "P", mess);
 		slave = slave -> next;
 	}
-	printf("Handle part 5\n");
 	pthread_mutex_unlock(&lock_lock);
 	free(mess);
-
 }
 
+/*//////////////////////////////////////////////
+Creates new thread for each part of file to be handled and sent to node
+//////////////////////////////////////////////*/
 void distribute_file(int fd, struct file_info* new_file, struct node* slaves, int system_reliability) {
 	pthread_t tids[new_file -> num_of_parts];
 	struct handle_part_arg args[new_file -> num_of_parts];
@@ -150,6 +154,9 @@ void distribute_file(int fd, struct file_info* new_file, struct node* slaves, in
 
 }
 
+/*//////////////////////////////////////////////
+Sends status message to administration client each time when new status arrives
+//////////////////////////////////////////////*/
 void send_status_messages(int fd) {
 	struct node* unread_statuses;
 	struct node* p;
@@ -165,6 +172,9 @@ void send_status_messages(int fd) {
 	}
 }
 
+/*//////////////////////////////////////////////
+Reads message from DEL admin client, and gets slave id to be deleted
+//////////////////////////////////////////////*/
 void handle_delete_node(int fd, struct node* slaves) {
 	struct message *mess;
 	int slave_id;
@@ -178,24 +188,20 @@ void handle_delete_node(int fd, struct node* slaves) {
 	free(mess);
 }
 
+/*//////////////////////////////////////////////
+Finds slave to be deleted from slaves list and sets active status
+to be 0
+//////////////////////////////////////////////*/
 void delete_slave(int slave_id, struct node* slaves) {
 	struct node *slave, *pp;
 
-	printf("Przed szukaniem slave'a o ID: %d\n", slave_id);
 	slave = find_elem(slaves, slave_id);
 
-	printf("Znalezione ID szukanego slave'a: %d\n", slave -> id);
-
-	//if(slave -> id != -2) {
-		printf("Ustawiam status nieaktywny dla slave'a o ID: %d\n", slave -> id);
-		((struct slave_node*)(slave -> data)) -> active = 0;
-		close(((struct slave_node*)(slave -> data)) -> sock);
-		printf("USTAWIONE!\n");
-		//((struct slave_node*)(slave -> data)) ->  = 0;
-
-	//}
+	printf("Ustawiam status nieaktywny dla slave'a o ID: %d\n", slave -> id);
+	((struct slave_node*)(slave -> data)) -> active = 0;
+	close(((struct slave_node*)(slave -> data)) -> sock);
+	printf("USTAWIONE!\n");
 }
-
 
 /*//////////////////////////////////////////////
 Thread function, that handles upload client and
@@ -226,29 +232,6 @@ void* manage_client(void* args) {
 	} else if(strcmp(client -> type, "DEL") == 0) {
 		handle_delete_node(client -> new_fd, client -> slaves);
 	}
-
-	/*
-	switch(*(client -> type)){
-		case 85:
-
-		break;
-		case 84:
-			send_status_messages(client -> new_fd);
-			/*
-			HANDLING STATUS ADMINISTRATION CLIENT
-
-		break;
-		case 68:
-			/*
-			HANDLING DELETING NODE ADMINISTRATION CLIENT
-
-		break;
-		case 83:
-			/*
-			HANDLING ADDING NODE ADMINISTRATION CLIENT
-
-		break;
-	}*/
 
 	return NULL;
 }
@@ -298,16 +281,10 @@ struct file_info* get_file_info(int fd, struct file_info* files_list) {
 	printf("Get file info 1\n");
 	new_file = (struct file_info*)read_message_sm(fd);
 	new_file -> file_id = -1;
-	printf("Get file info 2\n");
-	//printf("Otrzymałem file info [FILENAME: %s] [FILESIZE: %d] [NUM OF PARTS: %d]\n", new_file -> filename, new_file -> file_size, new_file -> num_of_parts);
-	printf("Get file info 2.1\n");
 	add_new_file(new_file, files_list);
-printf("Get file info 2.2\n");
 	write_new_file_to_file(new_file);
-	printf("Get file info 3\n");
 	sprintf(file_id, "%10d", new_file -> file_id);
 	file_id[10] = '\0';
-	printf("Get file info 4\n");
 	printf("Przygotowane id: %s\n", file_id );
 	send_message(fd, "F", file_id);
 	printf("Get file info 5\n");
