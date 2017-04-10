@@ -21,6 +21,15 @@
 void wait_for_system_readiness_ac(int fd);
 void read_status_messages(int fd);
 
+void delete_node(int fd, int slave_id) {
+  char* mess;
+  mess = malloc(11);
+  sprintf(mess, "%10d", slave_id);
+  send_message(fd, "X", mess);
+  printf("Wysłałem wiadomość o usunięciu!");
+  free(mess);
+}
+
 void wait_for_system_readiness_ac(int fd) {
     int system_ready = 0;
     struct message* mess;
@@ -76,17 +85,23 @@ int main(int argc, char *argv[]) {
 
     fd = connect_socket(argv[1], atoi(argv[2]));
 
-	send_message(fd, type, "");
+	  send_message(fd, type, "");
 
     wait_for_system_readiness_ac(fd);
 
     if(strcmp(type, "ADM") == 0)
         read_status_messages(fd);
 
+    if(strcmp(type, "DEL") == 0)
+        delete_node(fd, slave_id);
+
         /*
     switch(*type){
-        case 84:
-            read_status_messages(fd);
+      case 84:
+        read_status_messages(fd);
+        break;
+      case
+    }
 			/*
 			HANDLING STATUS ADMINISTRATION CLIENT
 
@@ -101,7 +116,7 @@ int main(int argc, char *argv[]) {
 			HANDLING ADDING NODE ADMINISTRATION CLIENT
 
 		break;
-    }*/
+  }*/
 
     if(TEMP_FAILURE_RETRY(close(fd))<0) ERR("close");
 

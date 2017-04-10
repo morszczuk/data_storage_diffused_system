@@ -48,31 +48,18 @@ int handle_upload_clients(int fd, int part_size, struct file_info* files_list,
 
 	client_threads_list = initialize_list();
 
-	/*
-	upload_threads = malloc(sizeof(struct uploader_thread));
-	upload_threads -> fd = -1;
-	up_thread = upload_threads;
-	*/
-
 	mess = malloc(sizeof(struct message));
 
 	while(sm_do_work) {
 		if((new_fd = add_new_client(fd)) > 0) {
 			printf("NEW CLIENT\n");
-
-			/*
-			first_char = read_first_char(new_fd);
-			printf("FIRST CHAR: %s", first_char);
-			*/
-			//read_type(new_fd, mess);
 			read_first_client_mess(new_fd, mess);
 			if(strcmp(mess -> type, "GET") == 0) {
-				printf("NOWY KLIENT I TO HTML!!!!: %s\n");
+				printf("NOWY KLIENT HTML!: %s\n");
 				read_html_request(new_fd, slaves);
 			}
 			else {
 				printf("NOWY KLIENT TYPU: %s\n", mess -> type);
-
 
 				up_thread = new_client_thread_arg(fd, new_fd, part_size, files_list,
 					lock, slaves, system_reliability, mess -> type);
@@ -80,34 +67,9 @@ int handle_upload_clients(int fd, int part_size, struct file_info* files_list,
 				if((pthread_create(&(up_thread -> tid), NULL, manage_client, (void*)up_thread)) < 0)
 					ERR("pthread_create:");
 
-
-
 				add_new_end(client_threads_list, (void*)up_thread);
 				add_new_client_status();
 			}
-
-
-			/*
-			if(up_thread -> fd != -1 )
-				up_thread = up_thread -> next;
-
-
-			up_thread -> next = malloc(sizeof(struct uploader_thread));
-			up_thread -> next -> fd = -1;
-
-			up_thread -> fd = fd;
-			up_thread -> new_fd = new_fd;
-			up_thread -> part_size = part_size;
-			up_thread -> files_list = files_list;
-			up_thread ->  lock = lock;
-			up_thread -> slaves = slaves;
-			up_thread -> system_reliability = system_reliability;
-
-
-			if((pthread_create(&(up_thread -> tid), NULL, manage_upload, (void*)up_thread)) < 0)
-				ERR("pthread_create:");
-			*/
-
 		}
 		sleep(1);
 	}
@@ -118,20 +80,6 @@ int handle_upload_clients(int fd, int part_size, struct file_info* files_list,
 		pthread_join(((struct client_thread_arg*)node -> data) -> tid, NULL);
 		node = node -> next;
 	}
-
-/*
-	up_thread = upload_threads;
-	while(up_thread -> fd != -1) {
-		pthread_join(up_thread -> tid, NULL);
-		up_thread = up_thread -> next;
-	}
-
-	while(upload_threads -> fd != -1) {
-		up_thread = upload_threads;
-		upload_threads = upload_threads -> next;
-		free(up_thread);
-	}
-	*/
 
 	free_list(client_threads_list);
 	free(mess);
@@ -162,32 +110,17 @@ void* handle_part(void* args){
 	printf("\n\n\n\n\n PRZED LICZENIEM AKTYWNYCH SLAVEOW \n\n\n\n\n");
 	active_slaves_count = count_active_slaves(arg -> slaves);
 	printf("\n\n\n\n\nAKTYWNYCH SLAVE'ÓW: %d\n\n\n\n\n", active_slaves_count);
-	//printf("Handle part 3\n\n\n");
 	diff = rand()%(slaves_count - (arg -> system_reliability ));
-	//printf("\n\n\n\n\nWYLOSOWANY DIFF: %d\n\n\n\n\n", diff);
-	//printf("Handle part 3.0.1 [DIFF: %d]\n\n\n", diff);
 	slave = arg -> slaves -> next;
-	//printf("Handle part 3.0,2\n\n\n");
 	while(i < diff) {
-		//printf("Handle part 3.0.3\n\n\n");
 		slave = slave -> next;
-		//printf("Handle part 3.0.4\n\n\n");
 		printf("Handle part 3.1 [NODE ID: %d]\n", slave -> id);
-		//printf("Handle part 3.0.5\n\n\n");
 		i++;
 	}
-	//printf("Handle part 3.2\n\n\n");
-	//printf("Handle part 4\n");
 	mess = malloc(23 + strlen(part -> data));
-	//printf("Handle part 4.0.1\n");
 	sprintf(mess, "%10d+%10d+%s", part -> file_id, part -> part_id, part -> data);
-	//printf("Handle part 4.0.2\n");
 	for(i = 0; i < ((arg -> system_reliability) + 1); i++) {
-		//printf("Handle part 4.1\n");
-
-		//printf("Handle part 4.2\n");
 		slave_node = (struct slave_node*)(slave -> data);
-		//printf("Handle part 4.3\n");
 		send_message(slave_node-> sock, "P", mess);
 		slave = slave -> next;
 	}
@@ -232,6 +165,38 @@ void send_status_messages(int fd) {
 	}
 }
 
+void handle_delete_node(int fd, struct node* slaves) {
+	struct message *mess;
+	int slave_id;
+	mess = malloc(sizeof(struct message));
+	sleep(0.1);
+	read_mess(fd, mess);
+	printf("ID SLAVE'A DO USUNIECIA TO: %s\n", mess -> message);
+
+	slave_id = atoi(mess -> message);
+	delete_slave(slave_id, slaves);
+	free(mess);
+}
+
+void delete_slave(int slave_id, struct node* slaves) {
+	struct node *slave, *pp;
+
+	printf("Przed szukaniem slave'a o ID: %d\n", slave_id);
+	slave = find_elem(slaves, slave_id);
+
+	printf("Znalezione ID szukanego slave'a: %d\n", slave -> id);
+
+	//if(slave -> id != -2) {
+		printf("Ustawiam status nieaktywny dla slave'a o ID: %d\n", slave -> id);
+		((struct slave_node*)(slave -> data)) -> active = 0;
+		close(((struct slave_node*)(slave -> data)) -> sock);
+		printf("USTAWIONE!\n");
+		//((struct slave_node*)(slave -> data)) ->  = 0;
+
+	//}
+}
+
+
 /*//////////////////////////////////////////////
 Thread function, that handles upload client and
 uploading proccess of a new file
@@ -258,6 +223,8 @@ void* manage_client(void* args) {
 		add_new_file_status();
 	} else if(strcmp(client -> type, "ADM") == 0) {
 		send_status_messages(client -> new_fd);
+	} else if(strcmp(client -> type, "DEL") == 0) {
+		handle_delete_node(client -> new_fd, client -> slaves);
 	}
 
 	/*

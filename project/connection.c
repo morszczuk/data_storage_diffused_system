@@ -25,6 +25,8 @@ int send_message(int fd, char* mess_type, char* mess) {
 	message = malloc(strlen(mess_type) + 10 + size + 3);
 	sprintf(message, "%s+%10d%s", mess_type, size, mess);
 
+	printf("Send message prepared to send: %s", message);
+
 	c = bulk_write(fd, message, strlen(message));
 	free(message);
 	return c;
