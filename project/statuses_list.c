@@ -49,6 +49,12 @@ void add_new_slave_status(){
     add_new_end(statuses_list, (void*)status);
 }
 
+void delete_slave_status(){
+    char* status = "[Usunięto slave]";
+
+    add_new_end(statuses_list, (void*)status);
+}
+
 void add_new_file_status(){
     char* status = "[Wgrano nowy plik]";
 
@@ -57,6 +63,12 @@ void add_new_file_status(){
 
 void add_file_downloaded_status(){
     char* status = "[Pobrano plik]";
+
+    add_new_end(statuses_list, (void*)status);
+}
+
+void add_file_downloaded_error_status(){
+    char* status = "[Nie udało się pobrać pliku!]";
 
     add_new_end(statuses_list, (void*)status);
 }

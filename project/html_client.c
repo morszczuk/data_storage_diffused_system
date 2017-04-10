@@ -59,14 +59,13 @@ void serve_file(int fd, int file_id, struct node* slaves){
 
 	file_data = malloc(1024);
 	response = malloc(1024);
-response_body = malloc(1024);
+	response_body = malloc(1024);
 
 	files_list = prepare_list_of_files();
 	files_list = files_list -> next;
 	while(files_list -> id != -2){
 		file = (struct file_info*)(files_list -> data);
-		if( file -> file_id == file_id)
-		{
+		if( file -> file_id == file_id) {
 			printf("ZNALEZIONO PLIK! ID: %d NUM OF PARTS: %d\n", file -> file_id, file -> num_of_parts);
 			break;
 		}
@@ -93,17 +92,18 @@ response_body = malloc(1024);
 		pthread_join(*((pthread_t*)(node -> data)), &data);
 		if(data == NULL) {
 
-				response_body = "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\"><html><head><title>Błąd!</title></head><body><h1>Bad Request</h1><p>Liczba wyłączonych slave\'ów przekroczyła poziom niezawodności tego pliku.<p></body></html>";
+			response_body = "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\"><html><head><title>Błąd!</title></head><body><h1>Bad Request</h1><p>Liczba wyłączonych slave\'ów przekroczyła poziom niezawodności tego pliku.<p></body></html>";
 			sprintf(response,
-				"HTTP/1.1 400 Bad Request\r\n"
-				"Content-Length: %d\r\n"
-				"Content-Type: text/html; charset=utf-8\r\n"
-				"Connection: Closed\r\n"
-				"\r\n"
-				"%s",
-				strlen(response_body), response_body);
+			"HTTP/1.1 400 Bad Request\r\n"
+			"Content-Length: %d\r\n"
+			"Content-Type: text/html; charset=utf-8\r\n"
+			"Connection: Closed\r\n"
+			"\r\n"
+			"%s",
+			strlen(response_body), response_body);
 
 			bulk_write(fd, response, strlen(response));
+			add_file_downloaded_error_status();
 			return;
 		}
 

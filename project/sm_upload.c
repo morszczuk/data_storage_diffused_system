@@ -201,6 +201,7 @@ void delete_slave(int slave_id, struct node* slaves) {
 	((struct slave_node*)(slave -> data)) -> active = 0;
 	close(((struct slave_node*)(slave -> data)) -> sock);
 	printf("USTAWIONE!\n");
+	delete_slave_status();
 }
 
 /*//////////////////////////////////////////////
