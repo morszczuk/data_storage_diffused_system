@@ -1,0 +1,1 @@
+This is example file. It should be distributed among different nodes and be stored in remote server. Access to this file should be available even after quitting specific number of nodes. 
